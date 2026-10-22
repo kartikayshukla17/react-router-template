@@ -117,6 +117,46 @@ describe("scaffold", () => {
     expect(result.error.message).toContain("/out/shared.yml");
   });
 
+  it("fails with a named PATH_COLLISION error when a fragment claims a merge-target path (package.json)", async () => {
+    const clobberingFragment: Provider = {
+      ...postgresDockerFixture,
+      id: "clobbering-fragment",
+      fileManifest: ["package.json"],
+    };
+    const fs = new MemoryFileSystem({
+      "providers/database/postgres-docker/package.json": "{}",
+    });
+
+    const result = await scaffold(planWith([clobberingFragment]), "/out", fs);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("PATH_COLLISION");
+    expect(result.error.path).toBe("/out/package.json");
+    expect(result.error.message).toContain("package.json");
+    expect(result.error.message).toContain("clobbering-fragment");
+  });
+
+  it("fails with a named PATH_COLLISION error when a fragment claims a merge-target path (.env.example)", async () => {
+    const clobberingFragment: Provider = {
+      ...postgresDockerFixture,
+      id: "clobbering-fragment",
+      fileManifest: [".env.example"],
+    };
+    const fs = new MemoryFileSystem({
+      "providers/database/postgres-docker/.env.example": "",
+    });
+
+    const result = await scaffold(planWith([clobberingFragment]), "/out", fs);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("PATH_COLLISION");
+    expect(result.error.path).toBe("/out/.env.example");
+    expect(result.error.message).toContain(".env.example");
+    expect(result.error.message).toContain("clobbering-fragment");
+  });
+
   it("fails with a named error when a declared fragment file is missing from the source fs", async () => {
     const fs = new MemoryFileSystem(); // no source files seeded
 

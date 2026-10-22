@@ -63,6 +63,16 @@ export async function scaffold(
   return { ok: true, writtenPaths };
 }
 
+/**
+ * Filenames always written unconditionally after fragments, through the
+ * structured mergers in `merge/`. A fragment that declares one of these as
+ * one of its own output paths would otherwise be silently clobbered by the
+ * merge step moments later with no error at all — so they're seeded as
+ * pre-claimed paths below and treated exactly like a fragment-vs-fragment
+ * collision.
+ */
+const MERGE_TARGET_FILENAMES = ["package.json", ".env.example"] as const;
+
 function detectPathCollisions(
   plan: Plan,
   targetDir: string,
@@ -70,6 +80,10 @@ function detectPathCollisions(
   | { code: "PATH_COLLISION"; message: string; path: string; fragments: [string, string] }
   | undefined {
   const claimedBy = new Map<string, string>();
+
+  for (const filename of MERGE_TARGET_FILENAMES) {
+    claimedBy.set(joinPath(targetDir, filename), filename);
+  }
 
   for (const provider of plan.providers) {
     for (const relativeFile of provider.fileManifest) {
