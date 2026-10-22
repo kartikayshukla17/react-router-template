@@ -1,0 +1,93 @@
+/**
+ * The scaffolder: takes a `Plan` and writes it to `targetDir` through an
+ * injectable `FileSystem`. No module-level disk access — the exact same
+ * code path runs against `MemoryFileSystem` in tests and `NodeFileSystem`
+ * at runtime.
+ *
+ * Merge discipline (PRD.md §9): fragments add whole files at their own
+ * paths, or change shared files (`package.json`, `.env.example`) only
+ * through the structured mergers in `merge/`. Two fragments claiming the
+ * same output path is a hard failure, not a silent overwrite.
+ */
+
+import type { Plan } from "../resolver/types.js";
+import { mergeEnvExample } from "./merge/env-example.js";
+import { mergePackageJson } from "./merge/package-json.js";
+import { dirnamePath, joinPath } from "./paths.js";
+import type { FileSystem, ScaffoldResult } from "./types.js";
+
+export async function scaffold(
+  plan: Plan,
+  targetDir: string,
+  fs: FileSystem,
+): Promise<ScaffoldResult> {
+  const collision = detectPathCollisions(plan, targetDir);
+  if (collision) {
+    return { ok: false, error: collision };
+  }
+
+  const writtenPaths: string[] = [];
+
+  for (const provider of plan.providers) {
+    for (const relativeFile of provider.fileManifest) {
+      const sourcePath = joinPath(provider.files, relativeFile);
+      const content = await fs.readFile(sourcePath);
+      if (content === undefined) {
+        return {
+          ok: false,
+          error: {
+            code: "MISSING_FRAGMENT_FILE",
+            message: `Provider "${provider.id}" declares "${relativeFile}" but it is missing from its source at "${sourcePath}".`,
+            path: sourcePath,
+          },
+        };
+      }
+
+      const outputPath = joinPath(targetDir, relativeFile);
+      await fs.mkdir(dirnamePath(outputPath));
+      await fs.writeFile(outputPath, content);
+      writtenPaths.push(outputPath);
+    }
+  }
+
+  const packageJsonPath = joinPath(targetDir, "package.json");
+  const existingPackageJson = await fs.readFile(packageJsonPath);
+  await fs.writeFile(packageJsonPath, mergePackageJson(existingPackageJson, plan.providers));
+  writtenPaths.push(packageJsonPath);
+
+  const envExamplePath = joinPath(targetDir, ".env.example");
+  const existingEnvExample = await fs.readFile(envExamplePath);
+  await fs.writeFile(envExamplePath, mergeEnvExample(existingEnvExample, plan.env));
+  writtenPaths.push(envExamplePath);
+
+  return { ok: true, writtenPaths };
+}
+
+function detectPathCollisions(
+  plan: Plan,
+  targetDir: string,
+):
+  | { code: "PATH_COLLISION"; message: string; path: string; fragments: [string, string] }
+  | undefined {
+  const claimedBy = new Map<string, string>();
+
+  for (const provider of plan.providers) {
+    for (const relativeFile of provider.fileManifest) {
+      const outputPath = joinPath(targetDir, relativeFile);
+      const existingOwner = claimedBy.get(outputPath);
+
+      if (existingOwner !== undefined && existingOwner !== provider.id) {
+        return {
+          code: "PATH_COLLISION",
+          message: `Path collision at "${outputPath}": both "${existingOwner}" and "${provider.id}" write to this path.`,
+          path: outputPath,
+          fragments: [existingOwner, provider.id],
+        };
+      }
+
+      claimedBy.set(outputPath, provider.id);
+    }
+  }
+
+  return undefined;
+}

@@ -1,0 +1,20 @@
+# Postgres for local development, via Docker Compose.
+#
+# Stub content for ticket 001 of create-rr-stack: the base app template
+# (ticket 002) doesn't exist yet, so this fragment isn't wired into a real
+# project yet. It proves the provider manifest + scaffolder shape end to end.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
