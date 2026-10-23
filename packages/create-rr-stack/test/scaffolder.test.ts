@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Plan, Provider } from "../src/resolver/types.js";
+import type { Glue, Plan, Provider } from "../src/resolver/types.js";
 import { MemoryFileSystem } from "../src/scaffolder/fs/memory-fs.js";
 import { scaffold } from "../src/scaffolder/scaffold.js";
 
@@ -22,10 +22,10 @@ const postgresDockerFixture: Provider = {
   nextSteps: ["Run `docker compose up -d`."],
 };
 
-function planWith(providers: Provider[]): Plan {
+function planWith(providers: Provider[], glue: Glue[] = []): Plan {
   return {
     providers,
-    glue: [],
+    glue,
     installOrder: providers.map((p) => p.id),
     env: providers.flatMap((p) => p.env),
     nextSteps: providers.flatMap((p) => p.nextSteps),
@@ -155,6 +155,52 @@ describe("scaffold", () => {
     expect(result.error.path).toBe("/out/.env.example");
     expect(result.error.message).toContain(".env.example");
     expect(result.error.message).toContain("clobbering-fragment");
+  });
+
+  it("writes a glue fragment's files and merges its deps into package.json", async () => {
+    const glueFixture: Glue = {
+      between: ["drizzle", "better-auth"],
+      files: "glue/better-auth+drizzle",
+      deps: { "extra-glue-dep": "^1.0.0" },
+      fileManifest: ["app/server/auth.ts"],
+    };
+    const fs = new MemoryFileSystem({
+      "glue/better-auth+drizzle/app/server/auth.ts": "export const auth = {};\n",
+    });
+
+    const result = await scaffold(planWith([], [glueFixture]), "/out", fs);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.writtenPaths).toContain("/out/app/server/auth.ts");
+
+    const pkgRaw = await fs.readFile("/out/package.json");
+    const pkg = JSON.parse(pkgRaw as string) as { dependencies: Record<string, string> };
+    expect(pkg.dependencies["extra-glue-dep"]).toBe("^1.0.0");
+  });
+
+  it("fails with a named PATH_COLLISION error when a provider and a glue fragment claim the same path", async () => {
+    const provider: Provider = {
+      ...postgresDockerFixture,
+      id: "orm-fragment",
+      fileManifest: ["app/server/auth.ts"],
+    };
+    const glueFixture: Glue = {
+      between: ["drizzle", "better-auth"],
+      files: "glue/better-auth+drizzle",
+      fileManifest: ["app/server/auth.ts"],
+    };
+    const fs = new MemoryFileSystem({
+      "providers/database/postgres-docker/app/server/auth.ts": "a",
+      "glue/better-auth+drizzle/app/server/auth.ts": "b",
+    });
+
+    const result = await scaffold(planWith([provider], [glueFixture]), "/out", fs);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("PATH_COLLISION");
+    expect(result.error.fragments).toEqual(["orm-fragment", "drizzle+better-auth"]);
   });
 
   it("fails with a named error when a declared fragment file is missing from the source fs", async () => {
