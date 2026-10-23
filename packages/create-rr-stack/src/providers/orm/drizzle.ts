@@ -1,6 +1,4 @@
-import path from "node:path";
 import { defineProvider } from "../define-provider.js";
-import { templatesRoot } from "../templates-root.js";
 
 /**
  * Drizzle ORM, wired against Neon's serverless Postgres driver. Ships the
@@ -25,7 +23,7 @@ export const drizzleProvider = defineProvider({
     "drizzle-kit": "^0.31.11",
   },
   env: [],
-  files: path.join(templatesRoot, "providers/orm/drizzle"),
+  files: "providers/orm/drizzle",
   fileManifest: ["app/server/db.ts", "app/db/schema.ts", "drizzle.config.ts"],
   scripts: {
     "db:push": "drizzle-kit push",

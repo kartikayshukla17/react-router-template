@@ -1,6 +1,4 @@
-import path from "node:path";
 import { defineProvider } from "../define-provider.js";
-import { templatesRoot } from "../templates-root.js";
 
 /**
  * Postgres hosted on Neon (https://neon.tech). Ships no files of its own —
@@ -24,7 +22,7 @@ export const postgresNeonProvider = defineProvider({
       secret: true,
     },
   ],
-  files: path.join(templatesRoot, "providers/database/postgres-neon"),
+  files: "providers/database/postgres-neon",
   fileManifest: [],
   nextSteps: [
     "Create a Neon project at https://console.neon.tech if you don't have one yet.",

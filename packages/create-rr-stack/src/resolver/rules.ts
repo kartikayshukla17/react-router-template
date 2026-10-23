@@ -18,6 +18,41 @@ const SUPPORTED_POSTGRES_HOSTS = ["docker", "neon"] as const;
 /** Layers whose selection is a real provider id looked up directly in the registry. */
 const REQUIRES_CHECKED_LAYERS: Layer[] = ["orm", "auth", "storage", "realtime"];
 
+/**
+ * Availability checks keyed by provider id, for constraints that `Provider.
+ * requires`/`conflicts` can't express because `Constraint` only models
+ * `{layer, oneOf}` pairs — not a sub-field like `postgresHost`. Each
+ * function returns `undefined` when the provider is available given
+ * `selections`, or a human-readable reason why it isn't.
+ *
+ * Exported (not just consumed by `rules` below) so `resolver/options.ts`
+ * can consult the same table when computing `disabled`/`reason` for a
+ * not-yet-fully-selected combination — "drizzle requires the Neon host"
+ * is one fact, checked the same way whether it's rejecting a completed
+ * selection (`resolve()`) or greying out a prompt option (`options()`).
+ *
+ * Each check only judges what it specifically knows about (here:
+ * `postgresHost`) and stays silent (returns `undefined`) when `database`
+ * isn't `"postgres"` yet or `postgresHost` hasn't been chosen yet — those
+ * cases are already owned by the provider's own `requires` constraint
+ * (`database in [postgres]`) and by `postgres-requires-supported-host`
+ * respectively, so this table doesn't duplicate or pre-empt them.
+ */
+export const providerAvailabilityChecks: Record<
+  string,
+  (selections: Selections) => string | undefined
+> = {
+  drizzle(selections) {
+    if (selections.database !== "postgres") {
+      return undefined;
+    }
+    if (selections.postgresHost === undefined || selections.postgresHost === "neon") {
+      return undefined;
+    }
+    return 'requires postgresHost "neon" (other hosts aren\'t wired to a Drizzle driver fragment yet)';
+  },
+};
+
 export const rules: Rule[] = [
   {
     id: "postgres-requires-supported-host",
@@ -56,14 +91,13 @@ export const rules: Rule[] = [
       if (selections.orm !== "drizzle") {
         return null;
       }
-      if (selections.database === "postgres" && selections.postgresHost === "neon") {
+      const reason = providerAvailabilityChecks.drizzle?.(selections);
+      if (reason === undefined) {
         return null;
       }
       return {
         code: "ORM_HOST_UNSUPPORTED",
-        message:
-          'orm "drizzle" currently requires database "postgres" with postgresHost "neon" ' +
-          "(other hosts aren't wired to a Drizzle driver fragment yet).",
+        message: `orm "drizzle" currently ${reason}.`,
         layer: "orm",
       };
     },

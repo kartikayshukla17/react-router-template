@@ -1,6 +1,4 @@
-import path from "node:path";
 import { defineProvider } from "../define-provider.js";
-import { templatesRoot } from "../templates-root.js";
 
 /**
  * Better Auth (https://www.better-auth.com). Ships no files of its own —
@@ -36,7 +34,7 @@ export const betterAuthProvider = defineProvider({
       secret: false,
     },
   ],
-  files: path.join(templatesRoot, "providers/auth/better-auth"),
+  files: "providers/auth/better-auth",
   fileManifest: [],
   nextSteps: ["Set BETTER_AUTH_SECRET in your .env file (a random 32+ byte string)."],
 });

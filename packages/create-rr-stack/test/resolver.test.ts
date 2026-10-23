@@ -129,4 +129,19 @@ describe("options", () => {
       { value: "better-auth", label: "Better Auth" },
     ]);
   });
+
+  it("disables drizzle when the postgres host is docker, since no non-Neon driver fragment exists yet", () => {
+    const result = options("orm", { database: "postgres", postgresHost: "docker" });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.value).toBe("drizzle");
+    expect(result[0]?.disabled).toBe(true);
+    expect(result[0]?.reason).toContain("neon");
+  });
+
+  it("still offers drizzle for the Neon host", () => {
+    expect(options("orm", { database: "postgres", postgresHost: "neon" })).toEqual([
+      { value: "drizzle", label: "Drizzle" },
+    ]);
+  });
 });

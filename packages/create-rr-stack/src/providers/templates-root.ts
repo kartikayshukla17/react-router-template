@@ -4,9 +4,20 @@ import { fileURLToPath } from "node:url";
 
 /**
  * Absolute path to the repo's `templates/` directory, computed from this
- * module's own location rather than `process.cwd()`. Provider manifests use
- * it to build an absolute `files` path, so `NodeFileSystem` can read their
- * fragments regardless of which directory the CLI is invoked from.
+ * module's own location rather than `process.cwd()`. Provider/glue
+ * manifests declare their `files` field as a path *relative to this root*;
+ * the scaffolder/CLI turns that into an absolute path only when it's about
+ * to actually read a fragment's files off disk (at scaffold time).
+ *
+ * Deliberately **lazy and memoized**, not computed as a side effect of
+ * importing this module: importing `resolver/rules.ts`, `resolver/
+ * options.ts`, or the provider registry pulls in every provider manifest
+ * (which reference `templatesRoot`-relative paths), and merely importing
+ * that module graph must never touch the filesystem or throw — the
+ * resolver is a deep module with a zero-I/O boundary. Walking the
+ * filesystem (and potentially throwing if `templates/` can't be found)
+ * only happens the first time `getTemplatesRoot()` is actually called,
+ * i.e. when the scaffolder is about to resolve a real path.
  *
  * Walks upward from this file looking for a `templates/` sibling instead of
  * hard-coding a fixed number of `..` segments, because the exact depth
@@ -38,4 +49,16 @@ function findTemplatesRoot(): string {
   );
 }
 
-export const templatesRoot = findTemplatesRoot();
+let cachedTemplatesRoot: string | undefined;
+
+/**
+ * Resolves (and caches) the absolute path to `templates/`. Call this only
+ * when actually about to read a fragment's files from disk — never at
+ * module-load time.
+ */
+export function getTemplatesRoot(): string {
+  if (cachedTemplatesRoot === undefined) {
+    cachedTemplatesRoot = findTemplatesRoot();
+  }
+  return cachedTemplatesRoot;
+}

@@ -16,6 +16,7 @@ import { scaffold } from "../scaffolder/scaffold.js";
 import { copyBaseTemplate } from "./base-copy.js";
 import { printNextSteps } from "./next-steps.js";
 import { writeProjectRecord } from "./project-record.js";
+import { resolvePlanFragmentPaths } from "./resolve-plan-paths.js";
 
 type ClackOption = { value: string; label: string; hint?: string };
 
@@ -107,14 +108,15 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
     selections.auth = auth;
   }
 
-  const includeExample = await p.confirm({
-    message: "Include the demo app (landing, sign-in, dashboard, notes)?",
-    initialValue: true,
-  });
-  if (p.isCancel(includeExample)) {
-    return cancelledWithNothingWritten();
-  }
-  selections.extras = { shadcn: false, docker: false, example: Boolean(includeExample) };
+  // No "Include the demo app?" prompt: the demo routes (landing, sign-in,
+  // dashboard, notes) currently ship unconditionally with the
+  // `better-auth+drizzle` glue fragment whenever both ORM and auth are
+  // selected — there's no real toggle to wire a prompt answer to yet.
+  // Making the demo strippable (`--no-example`, US6) is ticket 016's job.
+  // `extras.example` is hard-set to `true` here so the plan summary and
+  // `rr-stack.json` describe what's actually written, instead of echoing
+  // back an unused prompt answer.
+  selections.extras = { shadcn: false, docker: false, example: true };
 
   const result = resolve(selections);
   if (isErrors(result)) {
@@ -147,7 +149,11 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
   spinner.start("Scaffolding project");
 
   await copyBaseTemplate(targetDir);
-  const scaffoldResult = await scaffold(plan, targetDir, new NodeFileSystem());
+  const scaffoldResult = await scaffold(
+    resolvePlanFragmentPaths(plan),
+    targetDir,
+    new NodeFileSystem(),
+  );
 
   if (!scaffoldResult.ok) {
     spinner.stop("Scaffold failed");

@@ -1,6 +1,6 @@
 import { cp } from "node:fs/promises";
 import path from "node:path";
-import { templatesRoot } from "../providers/templates-root.js";
+import { getTemplatesRoot } from "../providers/templates-root.js";
 
 /**
  * Copies `templates/base` (the real, runnable React Router app) into the
@@ -22,7 +22,7 @@ const EXCLUDED_NAMES = new Set([
 ]);
 
 export async function copyBaseTemplate(targetDir: string): Promise<void> {
-  const baseDir = path.join(templatesRoot, "base");
+  const baseDir = path.join(getTemplatesRoot(), "base");
 
   await cp(baseDir, targetDir, {
     recursive: true,

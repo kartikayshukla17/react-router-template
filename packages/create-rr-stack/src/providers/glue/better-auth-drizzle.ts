@@ -1,6 +1,4 @@
-import path from "node:path";
 import type { Glue } from "../../resolver/types.js";
-import { templatesRoot } from "../templates-root.js";
 
 /**
  * Wires Better Auth's Drizzle adapter into the real `app/server/auth.ts`
@@ -16,7 +14,7 @@ import { templatesRoot } from "../templates-root.js";
  */
 export const betterAuthDrizzleGlue: Glue = {
   between: ["drizzle", "better-auth"],
-  files: path.join(templatesRoot, "glue/better-auth+drizzle"),
+  files: "glue/better-auth+drizzle",
   fileManifest: [
     "app/server/auth.ts",
     "app/db/auth-schema.ts",

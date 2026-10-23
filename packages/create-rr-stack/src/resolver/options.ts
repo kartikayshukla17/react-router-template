@@ -5,6 +5,7 @@
  */
 
 import { findProvider } from "../providers/registry.js";
+import { providerAvailabilityChecks } from "./rules.js";
 import type { Constraint, Layer, Option, Selections } from "./types.js";
 
 const DATABASE_OPTIONS: Option[] = [{ value: "postgres", label: "PostgreSQL" }];
@@ -47,7 +48,8 @@ export function options(layer: Layer, partial: Selections): Option[] {
     const provider = findProvider(layer, option.value);
     const reason =
       unmetConstraintReason(provider?.requires, partial, "requires") ??
-      unmetConstraintReason(provider?.conflicts, partial, "conflicts");
+      unmetConstraintReason(provider?.conflicts, partial, "conflicts") ??
+      providerAvailabilityChecks[option.value]?.(partial);
 
     if (reason === undefined) {
       return { ...option };
