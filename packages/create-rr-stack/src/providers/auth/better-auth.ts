@@ -9,18 +9,21 @@ import { defineProvider } from "../define-provider.js";
  * valid without an ORM (PRD §9).
  *
  * `orm`/`database` `oneOf` lists grow together, one pair per ORM: Drizzle
- * only ever pairs with `postgres`/`sqlite` (enforced independently by
- * `drizzle`'s own `requires`), Mongoose only ever pairs with `mongodb` — so
- * listing all four here doesn't let Drizzle+Mongo or Mongoose+Postgres
- * through; those combinations are already rejected by the ORM's own
- * `requires` constraint before this one is even relevant.
+ * and Prisma only ever pair with `postgres`/`sqlite` (enforced
+ * independently by each ORM's own `requires`), Mongoose only ever pairs
+ * with `mongodb` — so listing all five here doesn't let Drizzle+Mongo,
+ * Prisma+Mongo, or Mongoose+Postgres through; those combinations are
+ * already rejected by the ORM's own `requires` constraint before this one
+ * is even relevant. Ticket 008 adds `"prisma"` alongside `"drizzle"`
+ * without touching anything else here — the whole point of giving a layer
+ * a second provider.
  */
 export const betterAuthProvider = defineProvider({
   layer: "auth",
   id: "better-auth",
   label: "Better Auth",
   requires: [
-    { layer: "orm", oneOf: ["drizzle", "mongoose"] },
+    { layer: "orm", oneOf: ["drizzle", "mongoose", "prisma"] },
     { layer: "database", oneOf: ["postgres", "sqlite", "mongodb"] },
   ],
   deps: {

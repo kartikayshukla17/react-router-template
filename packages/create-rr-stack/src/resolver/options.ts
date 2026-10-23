@@ -15,6 +15,7 @@ const DATABASE_OPTIONS: Option[] = [
 ];
 const ORM_OPTIONS: Option[] = [
   { value: "drizzle", label: "Drizzle" },
+  { value: "prisma", label: "Prisma" },
   { value: "mongoose", label: "Mongoose" },
 ];
 const AUTH_OPTIONS: Option[] = [{ value: "better-auth", label: "Better Auth" }];

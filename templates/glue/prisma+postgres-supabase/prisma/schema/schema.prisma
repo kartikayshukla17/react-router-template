@@ -1,0 +1,27 @@
+// Starter Prisma schema for the demo `/notes` route — standard
+// `prisma-client-js` generator, no driver adapter: Supabase's direct
+// Postgres connection string is a normal Postgres wire-protocol
+// connection, not its PostgREST/HTTP API, so Prisma's own query engine
+// talks to it directly, same as the Docker host.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// `userId` stores the auth provider's user id as plain text, not a foreign
+// key — per PRD.md's documented tradeoff, there's no user-sync table for
+// third-party auth in v1, so this schema stays correct even if a
+// non-Prisma-backed auth provider is swapped in later.
+model Note {
+  id        String   @id
+  userId    String   @map("user_id")
+  title     String
+  content   String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notes")
+}

@@ -218,6 +218,124 @@ describe("resolve", () => {
     });
   });
 
+  describe("Prisma (ticket 008)", () => {
+    it("resolves the full Neon + Prisma + Better Auth combination to three providers and three glue fragments", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "neon",
+        orm: "prisma",
+        auth: "better-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "prisma", "postgres-neon"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual(
+        [
+          ["prisma", "better-auth"],
+          ["prisma", "postgres-neon"],
+        ].sort(),
+      );
+    });
+
+    it("resolves the full Docker + Prisma + Better Auth combination to three providers and three glue fragments", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "docker",
+        orm: "prisma",
+        auth: "better-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "prisma", "postgres-docker"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual(
+        [
+          ["prisma", "better-auth"],
+          ["prisma", "postgres-docker"],
+        ].sort(),
+      );
+    });
+
+    it("resolves the full Supabase + Prisma + Better Auth combination to four providers (incl. the shared Supabase client)", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "supabase",
+        orm: "prisma",
+        auth: "better-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "prisma", "postgres-supabase", "supabase-client"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual(
+        [
+          ["prisma", "better-auth"],
+          ["prisma", "postgres-supabase"],
+        ].sort(),
+      );
+    });
+
+    it("resolves SQLite + Prisma + Better Auth to three providers and two glue fragments, with zero database env vars", () => {
+      const result = resolve({
+        database: "sqlite",
+        orm: "prisma",
+        auth: "better-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "prisma", "sqlite"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual(
+        [
+          ["prisma", "better-auth"],
+          ["prisma", "sqlite"],
+        ].sort(),
+      );
+      expect(plan.env.map((e) => e.name)).not.toContain("DATABASE_URL");
+    });
+
+    it("allows prisma with a Docker-hosted postgres database", () => {
+      const result = resolve({ database: "postgres", postgresHost: "docker", orm: "prisma" });
+      expect(isErrors(result)).toBe(false);
+    });
+
+    it("rejects prisma paired with mongodb", () => {
+      const result = resolve({ database: "mongodb", mongoHost: "docker", orm: "prisma" });
+      expect(isErrors(result)).toBe(true);
+    });
+
+    it("switching drizzle<->prisma for the same database/host only changes the ORM and glue providers selected, not the database provider", () => {
+      const withDrizzle = resolve({
+        database: "postgres",
+        postgresHost: "docker",
+        orm: "drizzle",
+        auth: "better-auth",
+      }) as Plan;
+      const withPrisma = resolve({
+        database: "postgres",
+        postgresHost: "docker",
+        orm: "prisma",
+        auth: "better-auth",
+      }) as Plan;
+
+      expect(withDrizzle.providers.find((p) => p.id === "postgres-docker")).toEqual(
+        withPrisma.providers.find((p) => p.id === "postgres-docker"),
+      );
+      expect(withDrizzle.providers.map((p) => p.id).sort()).not.toEqual(
+        withPrisma.providers.map((p) => p.id).sort(),
+      );
+    });
+  });
+
   it("rejects better-auth without drizzle + postgres", () => {
     const result = resolve({ auth: "better-auth" });
     expect(isErrors(result)).toBe(true);
@@ -388,11 +506,17 @@ describe("options", () => {
     expect(options("realtime", {})).toEqual([]);
   });
 
-  it("lists drizzle as an orm option, disabled with a reason until database is postgres", () => {
+  it("lists drizzle and prisma as orm options, disabled with a reason until database is postgres", () => {
     expect(options("orm", {})).toEqual([
       {
         value: "drizzle",
         label: "Drizzle",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
+      {
+        value: "prisma",
+        label: "Prisma",
         disabled: true,
         reason: expect.stringContaining("database"),
       },
@@ -405,6 +529,7 @@ describe("options", () => {
     ]);
     expect(options("orm", { database: "postgres" })).toEqual([
       { value: "drizzle", label: "Drizzle" },
+      { value: "prisma", label: "Prisma" },
       {
         value: "mongoose",
         label: "Mongoose",
@@ -504,6 +629,64 @@ describe("options", () => {
       const mongoose = result.find((o) => o.value === "mongoose");
       expect(mongoose?.disabled).toBe(true);
       expect(mongoose?.reason).toContain("database");
+    });
+
+    it("hides prisma with the exact 'Drizzle and Prisma don't support MongoDB' reason once database is mongodb", () => {
+      const result = options("orm", { database: "mongodb" });
+      const prisma = result.find((o) => o.value === "prisma");
+      expect(prisma?.disabled).toBe(true);
+      expect(prisma?.reason).toBe("Drizzle and Prisma don't support MongoDB");
+    });
+  });
+
+  describe("Prisma filtering (ticket 008)", () => {
+    it("offers prisma for the Docker host", () => {
+      const result = options("orm", { database: "postgres", postgresHost: "docker" });
+      expect(result.find((o) => o.value === "prisma")).toEqual({
+        value: "prisma",
+        label: "Prisma",
+      });
+    });
+
+    it("offers prisma for the Neon host", () => {
+      const result = options("orm", { database: "postgres", postgresHost: "neon" });
+      expect(result.find((o) => o.value === "prisma")).toEqual({
+        value: "prisma",
+        label: "Prisma",
+      });
+    });
+
+    it("offers prisma for the Supabase host", () => {
+      const result = options("orm", { database: "postgres", postgresHost: "supabase" });
+      expect(result.find((o) => o.value === "prisma")).toEqual({
+        value: "prisma",
+        label: "Prisma",
+      });
+    });
+
+    it("offers prisma for sqlite — no host-driver concern applies there", () => {
+      const result = options("orm", { database: "sqlite" });
+      expect(result.find((o) => o.value === "prisma")).toEqual({
+        value: "prisma",
+        label: "Prisma",
+      });
+    });
+
+    it("offers better-auth once database is postgres and orm is prisma", () => {
+      expect(options("auth", { database: "postgres", orm: "prisma" })).toEqual([
+        { value: "better-auth", label: "Better Auth" },
+      ]);
+    });
+
+    it("disables prisma for a future unsupported host", () => {
+      const result = options("orm", {
+        database: "postgres",
+        postgresHost: "cockroach",
+      } as unknown as Selections);
+
+      const prisma = result.find((o) => o.value === "prisma");
+      expect(prisma?.disabled).toBe(true);
+      expect(prisma?.reason).toContain("neon, docker, supabase");
     });
   });
 });

@@ -1,0 +1,32 @@
+// Starter Prisma schema for the demo `/notes` route. The generator block
+// is deliberately identical to the other three `prisma+<host>` fragments'
+// (no `previewFeatures = ["driverAdapters"]`): verified empirically
+// against Prisma 6.19.3 that the flag is already deprecated/a no-op at
+// this version (`prisma generate` prints "Preview feature 'driverAdapters'
+// is deprecated. The functionality can be used without specifying it as a
+// preview feature."). Only `app/server/db.ts` (which supplies a
+// `@prisma/adapter-neon` driver adapter instead of letting Prisma connect
+// directly) differs for Neon — the schema shape is the same as every other
+// Postgres host.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// `userId` stores the auth provider's user id as plain text, not a foreign
+// key — per PRD.md's documented tradeoff, there's no user-sync table for
+// third-party auth in v1, so this schema stays correct even if a
+// non-Prisma-backed auth provider is swapped in later.
+model Note {
+  id        String   @id
+  userId    String   @map("user_id")
+  title     String
+  content   String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notes")
+}

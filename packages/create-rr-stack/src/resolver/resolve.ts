@@ -71,6 +71,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.orm === "prisma") {
+    const provider = findProvider("orm", "prisma");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   if (selections.auth === "better-auth") {
     const provider = findProvider("auth", "better-auth");
     if (provider) {
@@ -150,6 +157,49 @@ function selectGlue(selections: Selections): Glue[] {
     // unlike the Drizzle branch above, this is the only glue fragment the
     // Mongoose + Better Auth combination needs.
     const wiring = findGlue("mongoose", "better-auth");
+    if (wiring) {
+      glue.push(wiring);
+    }
+  }
+
+  if (selections.orm === "prisma" && selections.database === "postgres") {
+    // Host-specific datasource/driver wiring for `app/server/db.ts` and
+    // `prisma/schema/schema.prisma` — mirrors the Drizzle branch above.
+    // Exactly one of these host provider ids is ever selected alongside
+    // `prisma` (enforced by `postgres-requires-supported-host` +
+    // `prisma-requires-supported-host` in rules.ts), so at most one of
+    // these lookups ever succeeds.
+    const hostProviderId =
+      selections.postgresHost === "docker"
+        ? "postgres-docker"
+        : selections.postgresHost === "neon"
+          ? "postgres-neon"
+          : selections.postgresHost === "supabase"
+            ? "postgres-supabase"
+            : undefined;
+    const fragment = hostProviderId ? findGlue("prisma", hostProviderId) : undefined;
+    if (fragment) {
+      glue.push(fragment);
+    }
+  }
+
+  if (selections.orm === "prisma" && selections.database === "sqlite") {
+    // SQLite has no host concept, so there's exactly one driver fragment
+    // to pick, unconditionally, once SQLite is the selected database —
+    // mirrors the Drizzle branch above.
+    const fragment = findGlue("prisma", "sqlite");
+    if (fragment) {
+      glue.push(fragment);
+    }
+  }
+
+  if (selections.orm === "prisma" && selections.auth === "better-auth") {
+    // Unlike the Drizzle branch above, no second, dialect-keyed schema
+    // fragment lookup is needed: `prisma/schema/auth-schema.prisma`'s
+    // Prisma scalar types are connector-agnostic, so one `better-auth+
+    // prisma` glue fragment covers every database/host combination (see
+    // `providers/glue/better-auth-prisma.ts`'s doc comment).
+    const wiring = findGlue("prisma", "better-auth");
     if (wiring) {
       glue.push(wiring);
     }

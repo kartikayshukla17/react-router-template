@@ -1,0 +1,29 @@
+// Starter Prisma schema for the demo `/notes` route — SQLite flavor of
+// `prisma+postgres-*`'s `schema.prisma`. The `datasource` URL is resolved
+// relative to this file's directory (`prisma/schema/`), not the project
+// root, so `file:../../sqlite.db` lands at `<project root>/sqlite.db` —
+// verified empirically against Prisma 6.19.3 — the same path Drizzle's
+// SQLite glue uses, so switching ORMs for an already-running SQLite
+// project doesn't orphan an old database file at a different path.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../../sqlite.db"
+}
+
+// `userId` stores the auth provider's user id as plain text, not a foreign
+// key — per PRD.md's documented tradeoff, there's no user-sync table for
+// third-party auth in v1, so this schema stays correct even if a
+// non-Prisma-backed auth provider is swapped in later.
+model Note {
+  id        String   @id
+  userId    String   @map("user_id")
+  title     String
+  content   String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notes")
+}

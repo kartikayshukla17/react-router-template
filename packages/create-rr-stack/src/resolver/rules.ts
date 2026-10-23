@@ -71,6 +71,16 @@ const REQUIRES_CHECKED_LAYERS: SelectableLayer[] = ["orm", "auth", "storage", "r
  */
 export const DRIZZLE_SUPPORTED_POSTGRES_HOSTS = ["neon", "docker", "supabase"] as const;
 
+/**
+ * Ticket 008's Prisma counterpart to `DRIZZLE_SUPPORTED_POSTGRES_HOSTS`.
+ * Same three hosts: `prisma+postgres-{neon,docker,supabase}` glue
+ * fragments all exist (`providers/glue/prisma-postgres-*.ts`), so the
+ * allowlist is identical today — kept as its own named constant (rather
+ * than reusing Drizzle's) so the two ORMs' host support can diverge later
+ * without one edit silently changing the other's availability.
+ */
+export const PRISMA_SUPPORTED_POSTGRES_HOSTS = ["neon", "docker", "supabase"] as const;
+
 export const providerAvailabilityChecks: Record<
   string,
   (selections: Selections) => string | undefined
@@ -90,6 +100,22 @@ export const providerAvailabilityChecks: Record<
       return undefined;
     }
     return `requires postgresHost to be one of: ${DRIZZLE_SUPPORTED_POSTGRES_HOSTS.join(", ")} (other hosts aren't wired to a Drizzle driver fragment yet)`;
+  },
+  prisma(selections) {
+    const mongoReason = requiresNonMongoDatabase(selections);
+    if (mongoReason !== undefined) {
+      return mongoReason;
+    }
+    if (selections.database !== "postgres") {
+      return undefined;
+    }
+    if (
+      selections.postgresHost === undefined ||
+      (PRISMA_SUPPORTED_POSTGRES_HOSTS as readonly string[]).includes(selections.postgresHost)
+    ) {
+      return undefined;
+    }
+    return `requires postgresHost to be one of: ${PRISMA_SUPPORTED_POSTGRES_HOSTS.join(", ")} (other hosts aren't wired to a Prisma driver fragment yet)`;
   },
 };
 
@@ -161,6 +187,32 @@ export const rules: Rule[] = [
       return {
         code: "ORM_HOST_UNSUPPORTED",
         message: `orm "drizzle" currently ${reason}.`,
+        layer: "orm",
+      };
+    },
+  },
+  {
+    /**
+     * Prisma's counterpart to `drizzle-requires-supported-host`: `app/
+     * server/db.ts` is built by a host-specific `prisma+<host>` glue
+     * fragment, each wiring up the datasource/driver that host actually
+     * needs (a driver adapter for Neon vs. Prisma's standard engine for
+     * Docker/Supabase/SQLite). A future host without a matching glue
+     * fragment still can't offer Prisma — tracked via
+     * `providerAvailabilityChecks.prisma`, not re-litigated per host.
+     */
+    id: "prisma-requires-supported-host",
+    check(selections) {
+      if (selections.orm !== "prisma") {
+        return null;
+      }
+      const reason = providerAvailabilityChecks.prisma?.(selections);
+      if (reason === undefined) {
+        return null;
+      }
+      return {
+        code: "ORM_HOST_UNSUPPORTED",
+        message: `orm "prisma" currently ${reason}.`,
         layer: "orm",
       };
     },

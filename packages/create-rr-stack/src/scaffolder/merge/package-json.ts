@@ -27,6 +27,17 @@ function defaultPackageJson(): MinimalPackageJson {
  * and every glue fragment's `deps`. A later provider's pin for the same
  * package name wins — deterministic, since `plan.providers` order is fixed
  * by `resolve()`.
+ *
+ * Ticket 008 (Prisma): `orm/drizzle` and `orm/prisma` both declare a
+ * `db:push`/`db:studio` script pair under the same two keys (Drizzle's own
+ * `drizzle-kit push`/`studio` vs. Prisma's own `prisma db push`/`studio`).
+ * This never actually collides in `Object.assign`'s "last write wins"
+ * sense: `selections.orm` is a single string field
+ * (`resolver/types.ts`'s `Selections`), so `resolver/resolve.ts`'s
+ * `selectProviders()` puts at most one `orm`-layer provider into
+ * `plan.providers` per resolve — Drizzle and Prisma are mutually
+ * exclusive by construction, not by luck, so `providers` here never
+ * contains both at once for this loop to have to arbitrate between.
  */
 export function mergePackageJson(
   existing: string | undefined,
