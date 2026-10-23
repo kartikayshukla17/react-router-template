@@ -1,10 +1,13 @@
 import type { Provider } from "../resolver/types.js";
 import { betterAuthProvider } from "./auth/better-auth.js";
+import { mongodbDockerProvider } from "./database/mongodb-docker.js";
+import { mongodbHostedProvider } from "./database/mongodb-hosted.js";
 import { postgresDockerProvider } from "./database/postgres-docker.js";
 import { postgresNeonProvider } from "./database/postgres-neon.js";
 import { postgresSupabaseProvider } from "./database/postgres-supabase.js";
 import { sqliteProvider } from "./database/sqlite.js";
 import { drizzleProvider } from "./orm/drizzle.js";
+import { mongooseProvider } from "./orm/mongoose.js";
 
 /**
  * All provider manifests a `Selections` field can name directly (looked up
@@ -24,7 +27,10 @@ export const allProviders: readonly Provider[] = [
   postgresNeonProvider,
   postgresSupabaseProvider,
   sqliteProvider,
+  mongodbDockerProvider,
+  mongodbHostedProvider,
   drizzleProvider,
+  mongooseProvider,
   betterAuthProvider,
 ];
 

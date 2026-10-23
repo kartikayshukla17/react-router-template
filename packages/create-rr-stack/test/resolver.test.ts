@@ -129,6 +129,95 @@ describe("resolve", () => {
     expect(isErrors(result)).toBe(false);
   });
 
+  describe("MongoDB + Mongoose (ticket 007)", () => {
+    it("resolves mongodb+docker to exactly the mongodb-docker provider", () => {
+      const result = resolve({ database: "mongodb", mongoHost: "docker" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers).toHaveLength(1);
+      expect(plan.providers[0]?.id).toBe("mongodb-docker");
+      expect(plan.providers[0]?.layer).toBe("database");
+      expect(plan.env.map((e) => e.name)).toEqual(["MONGODB_URI"]);
+    });
+
+    it("resolves mongodb+hosted to exactly the mongodb-hosted provider", () => {
+      const result = resolve({ database: "mongodb", mongoHost: "hosted" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers).toHaveLength(1);
+      expect(plan.providers[0]?.id).toBe("mongodb-hosted");
+    });
+
+    it("rejects mongodb with no host, same as postgres with no host", () => {
+      const result = resolve({ database: "mongodb" });
+      expect(isErrors(result)).toBe(true);
+    });
+
+    it("rejects mongodb with an unsupported host", () => {
+      const result = resolve({
+        database: "mongodb",
+        mongoHost: "cosmos",
+      } as unknown as Selections);
+      expect(isErrors(result)).toBe(true);
+    });
+
+    it("resolves the full Docker-Mongo + Mongoose + Better Auth combination to three providers and two glue fragments", () => {
+      const result = resolve({
+        database: "mongodb",
+        mongoHost: "docker",
+        orm: "mongoose",
+        auth: "better-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "mongodb-docker", "mongoose"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual(
+        [
+          ["mongoose", "mongodb"],
+          ["better-auth", "mongoose"],
+        ].sort(),
+      );
+    });
+
+    it("resolves the hosted-Mongo + Mongoose + Better Auth combination identically on the glue side", () => {
+      const result = resolve({
+        database: "mongodb",
+        mongoHost: "hosted",
+        orm: "mongoose",
+        auth: "better-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "mongodb-hosted", "mongoose"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual(
+        [
+          ["mongoose", "mongodb"],
+          ["better-auth", "mongoose"],
+        ].sort(),
+      );
+    });
+
+    it("rejects drizzle paired with mongodb", () => {
+      const result = resolve({ database: "mongodb", mongoHost: "docker", orm: "drizzle" });
+      expect(isErrors(result)).toBe(true);
+    });
+
+    it("rejects mongoose paired with postgres or sqlite", () => {
+      expect(
+        isErrors(resolve({ database: "postgres", postgresHost: "docker", orm: "mongoose" })),
+      ).toBe(true);
+      expect(isErrors(resolve({ database: "sqlite", orm: "mongoose" }))).toBe(true);
+    });
+  });
+
   it("rejects better-auth without drizzle + postgres", () => {
     const result = resolve({ auth: "better-auth" });
     expect(isErrors(result)).toBe(true);
@@ -285,11 +374,12 @@ describe("resolve", () => {
 });
 
 describe("options", () => {
-  it("lists postgres and sqlite as database options", () => {
+  it("lists postgres, sqlite and mongodb as database options", () => {
     const result = options("database", {});
     expect(result).toEqual([
       { value: "postgres", label: "PostgreSQL" },
       { value: "sqlite", label: "SQLite (local file)" },
+      { value: "mongodb", label: "MongoDB" },
     ]);
   });
 
@@ -306,9 +396,21 @@ describe("options", () => {
         disabled: true,
         reason: expect.stringContaining("database"),
       },
+      {
+        value: "mongoose",
+        label: "Mongoose",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
     ]);
     expect(options("orm", { database: "postgres" })).toEqual([
       { value: "drizzle", label: "Drizzle" },
+      {
+        value: "mongoose",
+        label: "Mongoose",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
     ]);
   });
 
@@ -323,27 +425,35 @@ describe("options", () => {
   });
 
   it("offers drizzle for the Docker host, now that it has a real driver fragment", () => {
-    expect(options("orm", { database: "postgres", postgresHost: "docker" })).toEqual([
-      { value: "drizzle", label: "Drizzle" },
-    ]);
+    const result = options("orm", { database: "postgres", postgresHost: "docker" });
+    expect(result.find((o) => o.value === "drizzle")).toEqual({
+      value: "drizzle",
+      label: "Drizzle",
+    });
   });
 
   it("still offers drizzle for the Neon host", () => {
-    expect(options("orm", { database: "postgres", postgresHost: "neon" })).toEqual([
-      { value: "drizzle", label: "Drizzle" },
-    ]);
+    const result = options("orm", { database: "postgres", postgresHost: "neon" });
+    expect(result.find((o) => o.value === "drizzle")).toEqual({
+      value: "drizzle",
+      label: "Drizzle",
+    });
   });
 
   it("offers drizzle for the Supabase host, now that it has a real driver fragment", () => {
-    expect(options("orm", { database: "postgres", postgresHost: "supabase" })).toEqual([
-      { value: "drizzle", label: "Drizzle" },
-    ]);
+    const result = options("orm", { database: "postgres", postgresHost: "supabase" });
+    expect(result.find((o) => o.value === "drizzle")).toEqual({
+      value: "drizzle",
+      label: "Drizzle",
+    });
   });
 
   it("offers drizzle for sqlite — no host-driver concern applies there", () => {
-    expect(options("orm", { database: "sqlite" })).toEqual([
-      { value: "drizzle", label: "Drizzle" },
-    ]);
+    const result = options("orm", { database: "sqlite" });
+    expect(result.find((o) => o.value === "drizzle")).toEqual({
+      value: "drizzle",
+      label: "Drizzle",
+    });
   });
 
   it("offers better-auth once database is sqlite and orm is drizzle", () => {
@@ -358,9 +468,42 @@ describe("options", () => {
       postgresHost: "cockroach",
     } as unknown as Selections);
 
-    expect(result).toHaveLength(1);
-    expect(result[0]?.value).toBe("drizzle");
-    expect(result[0]?.disabled).toBe(true);
-    expect(result[0]?.reason).toContain("neon, docker, supabase");
+    const drizzle = result.find((o) => o.value === "drizzle");
+    expect(drizzle?.disabled).toBe(true);
+    expect(drizzle?.reason).toContain("neon, docker, supabase");
+  });
+
+  describe("MongoDB + Mongoose filtering (ticket 007)", () => {
+    it("never offers mongoose unless database is mongodb", () => {
+      expect(options("orm", {}).find((o) => o.value === "mongoose")?.disabled).toBe(true);
+      expect(
+        options("orm", { database: "postgres" }).find((o) => o.value === "mongoose")?.disabled,
+      ).toBe(true);
+      expect(
+        options("orm", { database: "sqlite" }).find((o) => o.value === "mongoose")?.disabled,
+      ).toBe(true);
+    });
+
+    it("offers mongoose once database is mongodb", () => {
+      const result = options("orm", { database: "mongodb" });
+      expect(result.find((o) => o.value === "mongoose")).toEqual({
+        value: "mongoose",
+        label: "Mongoose",
+      });
+    });
+
+    it("hides drizzle with the exact 'Drizzle and Prisma don't support MongoDB' reason once database is mongodb", () => {
+      const result = options("orm", { database: "mongodb" });
+      const drizzle = result.find((o) => o.value === "drizzle");
+      expect(drizzle?.disabled).toBe(true);
+      expect(drizzle?.reason).toBe("Drizzle and Prisma don't support MongoDB");
+    });
+
+    it("still disables mongoose for postgres/sqlite with a reason mentioning database", () => {
+      const result = options("orm", { database: "postgres" });
+      const mongoose = result.find((o) => o.value === "mongoose");
+      expect(mongoose?.disabled).toBe(true);
+      expect(mongoose?.reason).toContain("database");
+    });
   });
 });

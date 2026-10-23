@@ -11,8 +11,12 @@ import type { Constraint, Option, SelectableLayer, Selections } from "./types.js
 const DATABASE_OPTIONS: Option[] = [
   { value: "postgres", label: "PostgreSQL" },
   { value: "sqlite", label: "SQLite (local file)" },
+  { value: "mongodb", label: "MongoDB" },
 ];
-const ORM_OPTIONS: Option[] = [{ value: "drizzle", label: "Drizzle" }];
+const ORM_OPTIONS: Option[] = [
+  { value: "drizzle", label: "Drizzle" },
+  { value: "mongoose", label: "Mongoose" },
+];
 const AUTH_OPTIONS: Option[] = [{ value: "better-auth", label: "Better Auth" }];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {
@@ -49,10 +53,18 @@ export function options(layer: SelectableLayer, partial: Selections): Option[] {
 
   return registered.map((option) => {
     const provider = findProvider(layer, option.value);
+    // `providerAvailabilityChecks` is consulted first, not last: it exists
+    // precisely to give a *more specific* reason than the generic
+    // requires/conflicts message would (e.g. "Drizzle and Prisma don't
+    // support MongoDB" instead of "requires database to be one of:
+    // postgres, sqlite"), so it must win whenever it applies. Providers
+    // with no entry in that table (e.g. Mongoose, whose only constraint is
+    // its own `requires`) fall straight through to the generic checks below,
+    // unaffected by this ordering.
     const reason =
+      providerAvailabilityChecks[option.value]?.(partial) ??
       unmetConstraintReason(provider?.requires, partial, "requires") ??
-      unmetConstraintReason(provider?.conflicts, partial, "conflicts") ??
-      providerAvailabilityChecks[option.value]?.(partial);
+      unmetConstraintReason(provider?.conflicts, partial, "conflicts");
 
     if (reason === undefined) {
       return { ...option };

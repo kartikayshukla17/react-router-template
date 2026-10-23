@@ -14,6 +14,27 @@ export interface Rule {
 }
 
 const SUPPORTED_POSTGRES_HOSTS = ["docker", "neon", "supabase"] as const;
+const SUPPORTED_MONGO_HOSTS = ["docker", "hosted"] as const;
+
+/**
+ * The exact reason text ticket 007 requires, shown inline when `database`
+ * is `"mongodb"` and the ORM prompt would otherwise offer a SQL-only ORM.
+ * Shared (not inlined per-ORM) so ticket 008's Prisma provider can reuse it
+ * verbatim in its own `providerAvailabilityChecks.prisma` entry instead of
+ * re-deriving the wording.
+ */
+export const NO_MONGODB_SQL_ORMS_REASON = "Drizzle and Prisma don't support MongoDB";
+
+/**
+ * True exactly when `selections.database` rules out every SQL-only ORM —
+ * i.e. Mongo was picked. Factored out so each SQL-only ORM's
+ * `providerAvailabilityChecks` entry (today: `drizzle`; ticket 008: `prisma`)
+ * checks this first, ahead of its own host-specific logic, and shares one
+ * reason string rather than six independent ones.
+ */
+function requiresNonMongoDatabase(selections: Selections): string | undefined {
+  return selections.database === "mongodb" ? NO_MONGODB_SQL_ORMS_REASON : undefined;
+}
 
 /** Layers whose selection is a real provider id looked up directly in the registry. */
 const REQUIRES_CHECKED_LAYERS: SelectableLayer[] = ["orm", "auth", "storage", "realtime"];
@@ -55,6 +76,10 @@ export const providerAvailabilityChecks: Record<
   (selections: Selections) => string | undefined
 > = {
   drizzle(selections) {
+    const mongoReason = requiresNonMongoDatabase(selections);
+    if (mongoReason !== undefined) {
+      return mongoReason;
+    }
     if (selections.database !== "postgres") {
       return undefined;
     }
@@ -88,6 +113,29 @@ export const rules: Rule[] = [
           host === undefined
             ? `database "postgres" requires a "postgresHost" (one of: ${supportedList}).`
             : `postgresHost "${host}" is not supported yet (one of: ${supportedList}).`,
+        layer: "database",
+      };
+    },
+  },
+  {
+    id: "mongodb-requires-supported-host",
+    check(selections) {
+      if (selections.database !== "mongodb") {
+        return null;
+      }
+
+      const host = selections.mongoHost;
+      if (host !== undefined && (SUPPORTED_MONGO_HOSTS as readonly string[]).includes(host)) {
+        return null;
+      }
+
+      const supportedList = SUPPORTED_MONGO_HOSTS.join(", ");
+      return {
+        code: "MONGODB_HOST_UNRESOLVABLE",
+        message:
+          host === undefined
+            ? `database "mongodb" requires a "mongoHost" (one of: ${supportedList}).`
+            : `mongoHost "${host}" is not supported yet (one of: ${supportedList}).`,
         layer: "database",
       };
     },

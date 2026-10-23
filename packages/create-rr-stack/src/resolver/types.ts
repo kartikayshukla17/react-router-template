@@ -120,6 +120,19 @@ export interface Selections {
   storage?: string;
   realtime?: string;
   postgresHost?: "docker" | "neon" | "supabase";
+  /**
+   * Sub-choice for `database: "mongodb"`, same shape/purpose as
+   * `postgresHost`: "docker" is a local Docker Compose `mongo` container,
+   * "hosted" is a connection string to a hosted cluster (e.g. MongoDB
+   * Atlas) the CLI never creates an account or cluster for — it only asks
+   * for `MONGODB_URI`. Unlike Postgres, the two hosts share one driver
+   * (`mongoose.connect(<connection string>)`), so this only ever selects
+   * which `database/mongodb-*` provider (env var copy + optional
+   * `docker-compose.yml`) is included — it does not fork the
+   * `mongoose+mongodb` glue fragment the way `postgresHost` forks
+   * `drizzle+postgres-<host>` (see `providers/glue/mongoose-mongodb.ts`).
+   */
+  mongoHost?: "docker" | "hosted";
   extras?: { shadcn: boolean; docker: boolean; example: boolean };
 }
 

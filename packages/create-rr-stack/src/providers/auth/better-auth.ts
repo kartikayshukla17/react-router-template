@@ -2,19 +2,26 @@ import { defineProvider } from "../define-provider.js";
 
 /**
  * Better Auth (https://www.better-auth.com). Ships no files of its own —
- * the real `app/server/auth.ts` implementation, the auth schema tables, and
- * the demo sign-in/dashboard/notes routes are all owned by the
- * `better-auth+drizzle` glue fragment, since Better Auth is never valid
- * without an ORM + SQL database (PRD §9) and this repo only has one ORM
- * (Drizzle) wired up yet.
+ * the real `app/server/auth.ts` implementation and the demo sign-in/
+ * dashboard/notes routes are owned by whichever `better-auth+<orm>` glue
+ * fragment matches the selected ORM (`better-auth+drizzle` for SQL,
+ * `better-auth+mongoose` for Mongo, ticket 007), since Better Auth is never
+ * valid without an ORM (PRD §9).
+ *
+ * `orm`/`database` `oneOf` lists grow together, one pair per ORM: Drizzle
+ * only ever pairs with `postgres`/`sqlite` (enforced independently by
+ * `drizzle`'s own `requires`), Mongoose only ever pairs with `mongodb` — so
+ * listing all four here doesn't let Drizzle+Mongo or Mongoose+Postgres
+ * through; those combinations are already rejected by the ORM's own
+ * `requires` constraint before this one is even relevant.
  */
 export const betterAuthProvider = defineProvider({
   layer: "auth",
   id: "better-auth",
   label: "Better Auth",
   requires: [
-    { layer: "orm", oneOf: ["drizzle"] },
-    { layer: "database", oneOf: ["postgres", "sqlite"] },
+    { layer: "orm", oneOf: ["drizzle", "mongoose"] },
+    { layer: "database", oneOf: ["postgres", "sqlite", "mongodb"] },
   ],
   deps: {
     "better-auth": "^1.7.12",

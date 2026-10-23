@@ -85,6 +85,20 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
     selections.postgresHost = host;
   }
 
+  if (selections.database === "mongodb") {
+    const host = await p.select<Selections["mongoHost"]>({
+      message: "MongoDB host",
+      options: [
+        { value: "hosted", label: "Hosted (e.g. MongoDB Atlas)" },
+        { value: "docker", label: "Docker (local)" },
+      ],
+    });
+    if (p.isCancel(host) || host === undefined) {
+      return cancelledWithNothingWritten();
+    }
+    selections.mongoHost = host;
+  }
+
   const ormChoices: ClackOption[] = [
     ...availableOptions(options("orm", selections)),
     { value: "none", label: "None" },
@@ -174,7 +188,7 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
 
 function formatPlanSummary(selections: Selections, providerLabels: readonly string[]): string {
   const lines = [
-    `Database: ${selections.database ?? "none"}${selections.postgresHost ? ` (${selections.postgresHost})` : ""}`,
+    `Database: ${selections.database ?? "none"}${selections.postgresHost ? ` (${selections.postgresHost})` : ""}${selections.mongoHost ? ` (${selections.mongoHost})` : ""}`,
     `ORM: ${selections.orm ?? "none"}`,
     `Auth: ${selections.auth ?? "none"}`,
     `Demo app: ${selections.extras?.example ? "yes" : "no"}`,

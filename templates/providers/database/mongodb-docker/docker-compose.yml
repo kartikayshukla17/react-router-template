@@ -1,0 +1,16 @@
+# MongoDB for local development, via Docker Compose.
+#
+# No auth configured — a throwaway local container for development only.
+# Matches the connection string MONGODB_URI must use:
+# mongodb://localhost:27017/app
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

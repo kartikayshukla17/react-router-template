@@ -43,8 +43,29 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.database === "mongodb" && selections.mongoHost === "docker") {
+    const provider = findProvider("database", "mongodb-docker");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
+  if (selections.database === "mongodb" && selections.mongoHost === "hosted") {
+    const provider = findProvider("database", "mongodb-hosted");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   if (selections.orm === "drizzle") {
     const provider = findProvider("orm", "drizzle");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
+  if (selections.orm === "mongoose") {
+    const provider = findProvider("orm", "mongoose");
     if (provider) {
       selected.push(provider);
     }
@@ -109,6 +130,28 @@ function selectGlue(selections: Selections): Glue[] {
       if (schemaFragment) {
         glue.push(schemaFragment);
       }
+    }
+  }
+
+  if (selections.orm === "mongoose" && selections.database === "mongodb") {
+    // Host-independent, unlike the Postgres branch above: Mongo has one
+    // driver story for both `mongodb-docker` and `mongodb-hosted`, so this
+    // is keyed on the dialect value `"mongodb"` directly rather than on
+    // whichever host provider id was selected (see
+    // `providers/glue/mongoose-mongodb.ts`'s doc comment).
+    const fragment = findGlue("mongoose", "mongodb");
+    if (fragment) {
+      glue.push(fragment);
+    }
+  }
+
+  if (selections.orm === "mongoose" && selections.auth === "better-auth") {
+    // No dialect-keyed schema sibling needed here (MongoDB is schemaless) —
+    // unlike the Drizzle branch above, this is the only glue fragment the
+    // Mongoose + Better Auth combination needs.
+    const wiring = findGlue("mongoose", "better-auth");
+    if (wiring) {
+      glue.push(wiring);
     }
   }
 
