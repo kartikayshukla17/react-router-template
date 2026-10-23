@@ -1,5 +1,5 @@
 export { options } from "./options.js";
-export { resolve } from "./resolve.js";
+export { resolve, selectBaasClients } from "./resolve.js";
 export type { Rule } from "./rules.js";
 export { rules } from "./rules.js";
 export {

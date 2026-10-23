@@ -5,7 +5,17 @@
  * inline below.
  */
 
-export type Layer = "database" | "orm" | "auth" | "storage" | "realtime";
+/**
+ * `"baas"` is the third intentional extension beyond PRD.md §8's literal
+ * `Layer` union (alongside `Provider.baas` and `Selections.postgresHost`,
+ * both already present): the layer a shared BaaS client fragment (e.g.
+ * `supabase-client`, see `providers/baas/`) lives on. Nothing is ever
+ * selected directly onto this layer through `Selections` — no prompt asks
+ * for it — `resolve()`'s `selectBaasClients()` is the only thing that ever
+ * adds a `baas`-layer provider to a `Plan`, computed from which *other*
+ * selected providers declare `Provider.baas`.
+ */
+export type Layer = "database" | "orm" | "auth" | "storage" | "realtime" | "baas";
 
 /** A single prompt option surfaced by `options(layer, partial)`. */
 export interface Option {
@@ -91,6 +101,13 @@ export interface Selections {
   auth?: string;
   storage?: string;
   realtime?: string;
+  /**
+   * No prompt ever sets this directly (see `Layer`'s doc comment above) —
+   * present only so `selections[layer]` type-checks for every `Layer`
+   * value in `rules.ts`/`options.ts`, which index `Selections` generically
+   * by whatever `Layer` a `Constraint` or availability check names.
+   */
+  baas?: string;
   postgresHost?: "docker" | "neon" | "supabase";
   extras?: { shadcn: boolean; docker: boolean; example: boolean };
 }

@@ -18,6 +18,10 @@ const REGISTERED_OPTIONS: Record<Layer, Option[]> = {
   auth: AUTH_OPTIONS,
   storage: [],
   realtime: [],
+  // No prompt ever asks for "baas" directly — `resolve()`'s
+  // `selectBaasClients()` is the only thing that adds a baas-layer
+  // provider to a Plan. See `resolver/types.ts`'s `Layer` doc comment.
+  baas: [],
 };
 
 function unmetConstraintReason(

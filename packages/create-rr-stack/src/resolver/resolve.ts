@@ -6,6 +6,7 @@
  * (e.g. while the CLI is still prompting).
  */
 
+import { findBaasClientProvider } from "../providers/baas-registry.js";
 import { findGlue } from "../providers/glue-registry.js";
 import { findProvider } from "../providers/registry.js";
 import { rules } from "./rules.js";
@@ -23,6 +24,13 @@ function selectProviders(selections: Selections): Provider[] {
 
   if (selections.database === "postgres" && selections.postgresHost === "neon") {
     const provider = findProvider("database", "postgres-neon");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
+  if (selections.database === "postgres" && selections.postgresHost === "supabase") {
+    const provider = findProvider("database", "postgres-supabase");
     if (provider) {
       selected.push(provider);
     }
@@ -50,16 +58,18 @@ function selectGlue(selections: Selections): Glue[] {
 
   if (selections.orm === "drizzle" && selections.database === "postgres") {
     // Host-specific driver wiring for `app/server/db.ts`: Neon's HTTP driver
-    // vs. a plain TCP `postgres` client for Docker. Exactly one of these
-    // host provider ids is ever selected alongside `drizzle` (enforced by
-    // `postgres-requires-supported-host` + `drizzle-requires-supported-host`
-    // in rules.ts), so at most one of these two lookups ever succeeds.
+    // vs. a plain TCP `postgres` client for Docker/Supabase. Exactly one of
+    // these host provider ids is ever selected alongside `drizzle` (enforced
+    // by `postgres-requires-supported-host` + `drizzle-requires-supported-host`
+    // in rules.ts), so at most one of these lookups ever succeeds.
     const hostProviderId =
       selections.postgresHost === "docker"
         ? "postgres-docker"
         : selections.postgresHost === "neon"
           ? "postgres-neon"
-          : undefined;
+          : selections.postgresHost === "supabase"
+            ? "postgres-supabase"
+            : undefined;
     const fragment = hostProviderId ? findGlue("drizzle", hostProviderId) : undefined;
     if (fragment) {
       glue.push(fragment);
@@ -77,6 +87,44 @@ function selectGlue(selections: Selections): Glue[] {
 }
 
 /**
+ * The shared-BaaS-client dedup rule (PRD §8: `Provider.baas` — "shared
+ * client installed once"). Scans the already-selected providers for every
+ * distinct `baas` value they declare (e.g. `"supabase"`), then includes
+ * the one canonical client provider for each — via
+ * `providers/baas-registry.ts`'s `findBaasClientProvider()` — exactly
+ * once, no matter how many selected providers declare the same `baas`.
+ *
+ * This is what makes the "installed once" guarantee structural rather than
+ * a collision check the scaffolder has to win: by construction, the
+ * shared fragment is added to `providers` at most once per distinct
+ * `baas` value *before* `scaffold()` ever sees the plan, so a second
+ * `baas: "supabase"` provider never gets the chance to attempt writing
+ * `app/server/supabase-client.ts` a second time.
+ *
+ * Exported (not just used internally by `resolve()`) so this rule can be
+ * unit-tested directly against a locally-constructed stub provider ahead
+ * of a second *real* `baas: "supabase"` provider landing in the registry
+ * (tickets 010/014/015) — see `test/resolver.test.ts`.
+ */
+export function selectBaasClients(providers: readonly Provider[]): Provider[] {
+  const neededBaas = new Set<NonNullable<Provider["baas"]>>();
+  for (const provider of providers) {
+    if (provider.baas) {
+      neededBaas.add(provider.baas);
+    }
+  }
+
+  const clients: Provider[] = [];
+  for (const baas of neededBaas) {
+    const client = findBaasClientProvider(baas);
+    if (client) {
+      clients.push(client);
+    }
+  }
+  return clients;
+}
+
+/**
  * Resolves a set of selections into a `Plan`, or into an `Errors` value
  * describing every unresolvable requirement. Never throws: an invalid or
  * incomplete selection is an ordinary return value, not an exception.
@@ -90,8 +138,9 @@ export function resolve(selections: Selections): ResolveResult {
     return { errors };
   }
 
-  const providers = selectProviders(selections);
+  const selectedProviders = selectProviders(selections);
   const glue = selectGlue(selections);
+  const providers = [...selectedProviders, ...selectBaasClients(selectedProviders)];
 
   const plan: Plan = {
     providers,

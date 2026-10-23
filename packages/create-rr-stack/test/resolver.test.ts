@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { options } from "../src/resolver/options.js";
-import { resolve } from "../src/resolver/resolve.js";
-import { isErrors, type Plan, type Selections } from "../src/resolver/types.js";
+import { resolve, selectBaasClients } from "../src/resolver/resolve.js";
+import { isErrors, type Plan, type Provider, type Selections } from "../src/resolver/types.js";
 
 describe("resolve", () => {
   it("returns an empty, valid Plan for an empty selection", () => {
@@ -94,7 +94,7 @@ describe("resolve", () => {
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
       name: "postgres with an unsupported host",
-      selections: { database: "postgres", postgresHost: "supabase" },
+      selections: { database: "postgres", postgresHost: "cockroach" } as unknown as Selections,
     },
   ];
 
@@ -117,6 +117,100 @@ describe("resolve", () => {
   it("never throws regardless of input", () => {
     expect(() => resolve({ database: "postgres", postgresHost: "supabase" })).not.toThrow();
     expect(() => resolve({ database: "sqlite" })).not.toThrow();
+  });
+
+  it("resolves postgres+supabase to the postgres-supabase provider plus the shared supabase-client fragment", () => {
+    const result = resolve({ database: "postgres", postgresHost: "supabase" });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers.map((p) => p.id).sort()).toEqual(
+      ["postgres-supabase", "supabase-client"].sort(),
+    );
+
+    const envNames = plan.env.map((e) => e.name).sort();
+    expect(envNames).toEqual(["DATABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_URL"].sort());
+
+    const clientProvider = plan.providers.find((p) => p.id === "supabase-client");
+    expect(clientProvider?.deps["@supabase/supabase-js"]).toBeDefined();
+  });
+
+  it("resolves the full Supabase + Drizzle + Better Auth combination with the shared client included exactly once", () => {
+    const result = resolve({
+      database: "postgres",
+      postgresHost: "supabase",
+      orm: "drizzle",
+      auth: "better-auth",
+    });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers.map((p) => p.id).sort()).toEqual(
+      ["better-auth", "drizzle", "postgres-supabase", "supabase-client"].sort(),
+    );
+    expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
+    expect(plan.glue.map((g) => g.between).sort()).toEqual(
+      [
+        ["drizzle", "better-auth"],
+        ["drizzle", "postgres-supabase"],
+      ].sort(),
+    );
+  });
+
+  describe("selectBaasClients (BaaS shared-client dedup)", () => {
+    /**
+     * Ticket 005's core new mechanism: whichever and however many selected
+     * providers declare `baas: "supabase"`, the shared supabase-client
+     * fragment must appear exactly once in the resulting plan. Tickets
+     * 010/014/015 haven't landed yet, so there's no second *real* provider
+     * in the registry that also declares `baas: "supabase"` — this test
+     * proves the dedup rule itself, ahead of that, with a throwaway stub
+     * provider constructed only here (never added to
+     * `providers/registry.ts`).
+     */
+    it("includes the shared supabase-client fragment exactly once, even with two independent baas:supabase providers", () => {
+      const supabaseDatabaseProvider = (
+        resolve({
+          database: "postgres",
+          postgresHost: "supabase",
+        }) as Plan
+      ).providers.find((p) => p.id === "postgres-supabase");
+      expect(supabaseDatabaseProvider).toBeDefined();
+
+      // Stand-in for a future layer (e.g. ticket 010's Supabase Auth
+      // provider) that also needs the shared Supabase client. Local to this
+      // test only.
+      const stubSupabaseAuthProvider: Provider = {
+        layer: "auth",
+        id: "stub-supabase-auth",
+        label: "Stub Supabase Auth (test-only)",
+        baas: "supabase",
+        deps: {},
+        env: [],
+        files: "providers/auth/stub-supabase-auth",
+        fileManifest: [],
+        nextSteps: [],
+      };
+
+      const clients = selectBaasClients([
+        supabaseDatabaseProvider as Provider,
+        stubSupabaseAuthProvider,
+      ]);
+
+      expect(clients).toHaveLength(1);
+      expect(clients[0]?.id).toBe("supabase-client");
+    });
+
+    it("includes nothing when no selected provider declares a baas", () => {
+      const dockerProvider = (
+        resolve({
+          database: "postgres",
+          postgresHost: "docker",
+        }) as Plan
+      ).providers.find((p) => p.id === "postgres-docker");
+
+      expect(selectBaasClients([dockerProvider as Provider])).toEqual([]);
+    });
   });
 });
 
@@ -167,12 +261,21 @@ describe("options", () => {
     ]);
   });
 
-  it("disables drizzle for a future unsupported host (e.g. supabase)", () => {
-    const result = options("orm", { database: "postgres", postgresHost: "supabase" });
+  it("offers drizzle for the Supabase host, now that it has a real driver fragment", () => {
+    expect(options("orm", { database: "postgres", postgresHost: "supabase" })).toEqual([
+      { value: "drizzle", label: "Drizzle" },
+    ]);
+  });
+
+  it("disables drizzle for a future unsupported host", () => {
+    const result = options("orm", {
+      database: "postgres",
+      postgresHost: "cockroach",
+    } as unknown as Selections);
 
     expect(result).toHaveLength(1);
     expect(result[0]?.value).toBe("drizzle");
     expect(result[0]?.disabled).toBe(true);
-    expect(result[0]?.reason).toContain("neon, docker");
+    expect(result[0]?.reason).toContain("neon, docker, supabase");
   });
 });

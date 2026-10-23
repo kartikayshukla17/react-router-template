@@ -13,7 +13,7 @@ export interface Rule {
   check(selections: Selections): ResolverError | null;
 }
 
-const SUPPORTED_POSTGRES_HOSTS = ["docker", "neon"] as const;
+const SUPPORTED_POSTGRES_HOSTS = ["docker", "neon", "supabase"] as const;
 
 /** Layers whose selection is a real provider id looked up directly in the registry. */
 const REQUIRES_CHECKED_LAYERS: Layer[] = ["orm", "auth", "storage", "realtime"];
@@ -41,12 +41,14 @@ const REQUIRES_CHECKED_LAYERS: Layer[] = ["orm", "auth", "storage", "realtime"];
  *
  * Ticket 004 gave Docker a real `drizzle+postgres-docker` driver fragment
  * (node-postgres via the `postgres` package), so Drizzle is now available
- * for both `neon` and `docker`. The explicit allowlist stays (rather than
- * just returning `undefined` unconditionally) so a future host — e.g.
- * Supabase (005) — is disabled by default until it, too, gets its own
- * `drizzle+<host>` glue fragment.
+ * for both `neon` and `docker`. Ticket 005 adds `drizzle+postgres-supabase`
+ * (Supabase's direct connection string is a normal Postgres wire-protocol
+ * connection, so it reuses the same `postgres`-package driver family as
+ * Docker). The explicit allowlist stays (rather than just returning
+ * `undefined` unconditionally) so a future host without a matching
+ * `drizzle+<host>` glue fragment is disabled by default.
  */
-export const DRIZZLE_SUPPORTED_POSTGRES_HOSTS = ["neon", "docker"] as const;
+export const DRIZZLE_SUPPORTED_POSTGRES_HOSTS = ["neon", "docker", "supabase"] as const;
 
 export const providerAvailabilityChecks: Record<
   string,

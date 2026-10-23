@@ -75,6 +75,7 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
       message: "Postgres host",
       options: [
         { value: "neon", label: "Neon (hosted)" },
+        { value: "supabase", label: "Supabase (hosted)" },
         { value: "docker", label: "Docker (local)" },
       ],
     });
