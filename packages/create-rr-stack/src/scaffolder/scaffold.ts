@@ -16,28 +16,52 @@ import { mergePackageJson } from "./merge/package-json.js";
 import { dirnamePath, joinPath } from "./paths.js";
 import type { FileSystem, ScaffoldResult } from "./types.js";
 
+/** A provider or glue fragment, viewed uniformly as "an id that owns some files". */
+interface Fragment {
+  id: string;
+  files: string;
+  fileManifest: readonly string[];
+}
+
+function fragmentsOf(plan: Plan): Fragment[] {
+  return [
+    ...plan.providers.map((provider) => ({
+      id: provider.id,
+      files: provider.files,
+      fileManifest: provider.fileManifest,
+    })),
+    ...plan.glue.map((glue) => ({
+      id: `${glue.between[0]}+${glue.between[1]}`,
+      files: glue.files,
+      fileManifest: glue.fileManifest,
+    })),
+  ];
+}
+
 export async function scaffold(
   plan: Plan,
   targetDir: string,
   fs: FileSystem,
 ): Promise<ScaffoldResult> {
-  const collision = detectPathCollisions(plan, targetDir);
+  const fragments = fragmentsOf(plan);
+
+  const collision = detectPathCollisions(fragments, targetDir);
   if (collision) {
     return { ok: false, error: collision };
   }
 
   const writtenPaths: string[] = [];
 
-  for (const provider of plan.providers) {
-    for (const relativeFile of provider.fileManifest) {
-      const sourcePath = joinPath(provider.files, relativeFile);
+  for (const fragment of fragments) {
+    for (const relativeFile of fragment.fileManifest) {
+      const sourcePath = joinPath(fragment.files, relativeFile);
       const content = await fs.readFile(sourcePath);
       if (content === undefined) {
         return {
           ok: false,
           error: {
             code: "MISSING_FRAGMENT_FILE",
-            message: `Provider "${provider.id}" declares "${relativeFile}" but it is missing from its source at "${sourcePath}".`,
+            message: `Fragment "${fragment.id}" declares "${relativeFile}" but it is missing from its source at "${sourcePath}".`,
             path: sourcePath,
           },
         };
@@ -52,7 +76,10 @@ export async function scaffold(
 
   const packageJsonPath = joinPath(targetDir, "package.json");
   const existingPackageJson = await fs.readFile(packageJsonPath);
-  await fs.writeFile(packageJsonPath, mergePackageJson(existingPackageJson, plan.providers));
+  await fs.writeFile(
+    packageJsonPath,
+    mergePackageJson(existingPackageJson, plan.providers, plan.glue),
+  );
   writtenPaths.push(packageJsonPath);
 
   const envExamplePath = joinPath(targetDir, ".env.example");
@@ -74,7 +101,7 @@ export async function scaffold(
 const MERGE_TARGET_FILENAMES = ["package.json", ".env.example"] as const;
 
 function detectPathCollisions(
-  plan: Plan,
+  fragments: readonly Fragment[],
   targetDir: string,
 ):
   | { code: "PATH_COLLISION"; message: string; path: string; fragments: [string, string] }
@@ -85,21 +112,21 @@ function detectPathCollisions(
     claimedBy.set(joinPath(targetDir, filename), filename);
   }
 
-  for (const provider of plan.providers) {
-    for (const relativeFile of provider.fileManifest) {
+  for (const fragment of fragments) {
+    for (const relativeFile of fragment.fileManifest) {
       const outputPath = joinPath(targetDir, relativeFile);
       const existingOwner = claimedBy.get(outputPath);
 
-      if (existingOwner !== undefined && existingOwner !== provider.id) {
+      if (existingOwner !== undefined && existingOwner !== fragment.id) {
         return {
           code: "PATH_COLLISION",
-          message: `Path collision at "${outputPath}": both "${existingOwner}" and "${provider.id}" write to this path.`,
+          message: `Path collision at "${outputPath}": both "${existingOwner}" and "${fragment.id}" write to this path.`,
           path: outputPath,
-          fragments: [existingOwner, provider.id],
+          fragments: [existingOwner, fragment.id],
         };
       }
 
-      claimedBy.set(outputPath, provider.id);
+      claimedBy.set(outputPath, fragment.id);
     }
   }
 

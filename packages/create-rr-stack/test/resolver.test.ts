@@ -27,11 +27,49 @@ describe("resolve", () => {
     expect(plan.installOrder).toEqual(["postgres-docker"]);
   });
 
+  it("resolves postgres+neon to exactly the postgres-neon provider", () => {
+    const result = resolve({ database: "postgres", postgresHost: "neon" });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers).toHaveLength(1);
+    expect(plan.providers[0]?.id).toBe("postgres-neon");
+    expect(plan.providers[0]?.layer).toBe("database");
+    expect(plan.installOrder).toEqual(["postgres-neon"]);
+  });
+
+  it("resolves the full Neon + Drizzle + Better Auth combination to three providers and one glue fragment", () => {
+    const result = resolve({
+      database: "postgres",
+      postgresHost: "neon",
+      orm: "drizzle",
+      auth: "better-auth",
+    });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers.map((p) => p.id).sort()).toEqual(
+      ["better-auth", "drizzle", "postgres-neon"].sort(),
+    );
+    expect(plan.glue).toHaveLength(1);
+    expect(plan.glue[0]?.between).toEqual(["drizzle", "better-auth"]);
+  });
+
+  it("rejects drizzle without a Neon-hosted postgres database", () => {
+    const result = resolve({ database: "postgres", postgresHost: "docker", orm: "drizzle" });
+    expect(isErrors(result)).toBe(true);
+  });
+
+  it("rejects better-auth without drizzle + postgres", () => {
+    const result = resolve({ auth: "better-auth" });
+    expect(isErrors(result)).toBe(true);
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
       name: "postgres with an unsupported host",
-      selections: { database: "postgres", postgresHost: "neon" },
+      selections: { database: "postgres", postgresHost: "supabase" },
     },
   ];
 
@@ -64,9 +102,24 @@ describe("options", () => {
   });
 
   it("returns an empty list for layers with no registered providers yet", () => {
-    expect(options("orm", {})).toEqual([]);
-    expect(options("auth", {})).toEqual([]);
     expect(options("storage", {})).toEqual([]);
     expect(options("realtime", {})).toEqual([]);
+  });
+
+  it("lists drizzle as an orm option, disabled with a reason until database is postgres", () => {
+    expect(options("orm", {})).toEqual([
+      { value: "drizzle", label: "Drizzle", disabled: true, reason: expect.stringContaining("database") },
+    ]);
+    expect(options("orm", { database: "postgres" })).toEqual([{ value: "drizzle", label: "Drizzle" }]);
+  });
+
+  it("lists better-auth as an auth option, disabled until orm is drizzle and database is postgres", () => {
+    const disabled = options("auth", {});
+    expect(disabled).toHaveLength(1);
+    expect(disabled[0]?.disabled).toBe(true);
+
+    expect(options("auth", { database: "postgres", orm: "drizzle" })).toEqual([
+      { value: "better-auth", label: "Better Auth" },
+    ]);
   });
 });

@@ -6,9 +6,10 @@
  * (e.g. while the CLI is still prompting).
  */
 
+import { findGlue } from "../providers/glue-registry.js";
 import { findProvider } from "../providers/registry.js";
 import { rules } from "./rules.js";
-import type { Plan, Provider, ResolveResult, ResolverError, Selections } from "./types.js";
+import type { Glue, Plan, Provider, ResolveResult, ResolverError, Selections } from "./types.js";
 
 function selectProviders(selections: Selections): Provider[] {
   const selected: Provider[] = [];
@@ -20,7 +21,41 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.database === "postgres" && selections.postgresHost === "neon") {
+    const provider = findProvider("database", "postgres-neon");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
+  if (selections.orm === "drizzle") {
+    const provider = findProvider("orm", "drizzle");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
+  if (selections.auth === "better-auth") {
+    const provider = findProvider("auth", "better-auth");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
+}
+
+function selectGlue(selections: Selections): Glue[] {
+  const glue: Glue[] = [];
+
+  if (selections.orm === "drizzle" && selections.auth === "better-auth") {
+    const fragment = findGlue("drizzle", "better-auth");
+    if (fragment) {
+      glue.push(fragment);
+    }
+  }
+
+  return glue;
 }
 
 /**
@@ -38,10 +73,11 @@ export function resolve(selections: Selections): ResolveResult {
   }
 
   const providers = selectProviders(selections);
+  const glue = selectGlue(selections);
 
   const plan: Plan = {
     providers,
-    glue: [],
+    glue,
     installOrder: providers.map((provider) => provider.id),
     env: providers.flatMap((provider) => provider.env),
     nextSteps: providers.flatMap((provider) => provider.nextSteps),

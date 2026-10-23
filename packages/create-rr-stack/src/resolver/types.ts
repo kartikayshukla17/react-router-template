@@ -56,12 +56,26 @@ export interface Provider {
    */
   fileManifest: readonly string[];
   nextSteps: string[];
+  /**
+   * npm scripts to merge into the generated project's `package.json`
+   * (structured merge, same discipline as `deps`/`devDeps`). Optional
+   * because most providers don't need their own scripts; `orm/drizzle`
+   * is the first one that does (`db:push`, `db:studio`).
+   */
+  scripts?: Record<string, string>;
 }
 
 export interface Glue {
   between: [providerId: string, providerId: string];
   files: string;
   deps?: Record<string, string>;
+  /**
+   * Same rationale as `Provider.fileManifest`: the scaffolder's `FileSystem`
+   * seam has no directory-listing primitive, so a glue fragment declares the
+   * relative paths it ships instead of the scaffolder discovering them by
+   * walking `files` on disk.
+   */
+  fileManifest: readonly string[];
 }
 
 /**
