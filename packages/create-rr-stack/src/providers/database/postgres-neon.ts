@@ -3,8 +3,9 @@ import { defineProvider } from "../define-provider.js";
 /**
  * Postgres hosted on Neon (https://neon.tech). Ships no files of its own —
  * only the Neon driver dependency and the `DATABASE_URL` env var — because
- * the actual connection code lives in `orm/drizzle`'s `app/server/db.ts`
- * fragment (the ORM fragment is the one that constructs the client).
+ * the actual connection code lives in the `drizzle+postgres-neon` glue
+ * fragment's `app/server/db.ts` (`providers/glue/drizzle-postgres-neon.ts`),
+ * which constructs the client against Neon's HTTP driver.
  */
 export const postgresNeonProvider = defineProvider({
   layer: "database",

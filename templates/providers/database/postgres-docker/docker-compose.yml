@@ -1,8 +1,9 @@
 # Postgres for local development, via Docker Compose.
 #
-# Stub content for ticket 001 of create-rr-stack: the base app template
-# (ticket 002) doesn't exist yet, so this fragment isn't wired into a real
-# project yet. It proves the provider manifest + scaffolder shape end to end.
+# Fixed local-dev credentials (app/app/app) that the generated project's
+# DATABASE_URL must match: postgres://app:app@localhost:5432/app. Not a
+# production credential — this is a throwaway local container, so there's
+# no account-signup step, just `docker compose up -d`.
 services:
   postgres:
     image: postgres:17-alpine

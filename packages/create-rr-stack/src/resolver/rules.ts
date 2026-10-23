@@ -27,9 +27,10 @@ const REQUIRES_CHECKED_LAYERS: Layer[] = ["orm", "auth", "storage", "realtime"];
  *
  * Exported (not just consumed by `rules` below) so `resolver/options.ts`
  * can consult the same table when computing `disabled`/`reason` for a
- * not-yet-fully-selected combination — "drizzle requires the Neon host"
- * is one fact, checked the same way whether it's rejecting a completed
- * selection (`resolve()`) or greying out a prompt option (`options()`).
+ * not-yet-fully-selected combination — "drizzle requires a host with a
+ * driver fragment" is one fact, checked the same way whether it's
+ * rejecting a completed selection (`resolve()`) or greying out a prompt
+ * option (`options()`).
  *
  * Each check only judges what it specifically knows about (here:
  * `postgresHost`) and stays silent (returns `undefined`) when `database`
@@ -37,7 +38,16 @@ const REQUIRES_CHECKED_LAYERS: Layer[] = ["orm", "auth", "storage", "realtime"];
  * cases are already owned by the provider's own `requires` constraint
  * (`database in [postgres]`) and by `postgres-requires-supported-host`
  * respectively, so this table doesn't duplicate or pre-empt them.
+ *
+ * Ticket 004 gave Docker a real `drizzle+postgres-docker` driver fragment
+ * (node-postgres via the `postgres` package), so Drizzle is now available
+ * for both `neon` and `docker`. The explicit allowlist stays (rather than
+ * just returning `undefined` unconditionally) so a future host — e.g.
+ * Supabase (005) — is disabled by default until it, too, gets its own
+ * `drizzle+<host>` glue fragment.
  */
+export const DRIZZLE_SUPPORTED_POSTGRES_HOSTS = ["neon", "docker"] as const;
+
 export const providerAvailabilityChecks: Record<
   string,
   (selections: Selections) => string | undefined
@@ -46,10 +56,13 @@ export const providerAvailabilityChecks: Record<
     if (selections.database !== "postgres") {
       return undefined;
     }
-    if (selections.postgresHost === undefined || selections.postgresHost === "neon") {
+    if (
+      selections.postgresHost === undefined ||
+      (DRIZZLE_SUPPORTED_POSTGRES_HOSTS as readonly string[]).includes(selections.postgresHost)
+    ) {
       return undefined;
     }
-    return 'requires postgresHost "neon" (other hosts aren\'t wired to a Drizzle driver fragment yet)';
+    return `requires postgresHost to be one of: ${DRIZZLE_SUPPORTED_POSTGRES_HOSTS.join(", ")} (other hosts aren't wired to a Drizzle driver fragment yet)`;
   },
 };
 
@@ -79,14 +92,14 @@ export const rules: Rule[] = [
   },
   {
     /**
-     * `orm/drizzle`'s own `app/server/db.ts` fragment is hand-written against
-     * the Neon serverless driver (`drizzle-orm/neon-http`) because Neon is
-     * the only Postgres host this ticket wires an ORM against. A different
-     * host's driver (e.g. `node-postgres` for Docker) needs its own
-     * host-specific fragment before `drizzle` can be offered there — tracked
-     * for the Docker-host ticket, not re-litigated here.
+     * `app/server/db.ts` is built by a host-specific `drizzle+<host>` glue
+     * fragment (`drizzle+postgres-neon` or `drizzle+postgres-docker`), each
+     * wiring up the driver that host actually needs (Neon's HTTP driver vs.
+     * a plain TCP `postgres` client for Docker). A future host without a
+     * matching glue fragment still can't offer Drizzle — tracked here via
+     * `providerAvailabilityChecks.drizzle`, not re-litigated per host.
      */
-    id: "drizzle-requires-neon-host",
+    id: "drizzle-requires-supported-host",
     check(selections) {
       if (selections.orm !== "drizzle") {
         return null;

@@ -48,6 +48,24 @@ function selectProviders(selections: Selections): Provider[] {
 function selectGlue(selections: Selections): Glue[] {
   const glue: Glue[] = [];
 
+  if (selections.orm === "drizzle" && selections.database === "postgres") {
+    // Host-specific driver wiring for `app/server/db.ts`: Neon's HTTP driver
+    // vs. a plain TCP `postgres` client for Docker. Exactly one of these
+    // host provider ids is ever selected alongside `drizzle` (enforced by
+    // `postgres-requires-supported-host` + `drizzle-requires-supported-host`
+    // in rules.ts), so at most one of these two lookups ever succeeds.
+    const hostProviderId =
+      selections.postgresHost === "docker"
+        ? "postgres-docker"
+        : selections.postgresHost === "neon"
+          ? "postgres-neon"
+          : undefined;
+    const fragment = hostProviderId ? findGlue("drizzle", hostProviderId) : undefined;
+    if (fragment) {
+      glue.push(fragment);
+    }
+  }
+
   if (selections.orm === "drizzle" && selections.auth === "better-auth") {
     const fragment = findGlue("drizzle", "better-auth");
     if (fragment) {

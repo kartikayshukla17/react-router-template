@@ -38,7 +38,7 @@ describe("resolve", () => {
     expect(plan.installOrder).toEqual(["postgres-neon"]);
   });
 
-  it("resolves the full Neon + Drizzle + Better Auth combination to three providers and one glue fragment", () => {
+  it("resolves the full Neon + Drizzle + Better Auth combination to three providers and two glue fragments", () => {
     const result = resolve({
       database: "postgres",
       postgresHost: "neon",
@@ -51,13 +51,38 @@ describe("resolve", () => {
     expect(plan.providers.map((p) => p.id).sort()).toEqual(
       ["better-auth", "drizzle", "postgres-neon"].sort(),
     );
-    expect(plan.glue).toHaveLength(1);
-    expect(plan.glue[0]?.between).toEqual(["drizzle", "better-auth"]);
+    expect(plan.glue.map((g) => g.between).sort()).toEqual(
+      [
+        ["drizzle", "better-auth"],
+        ["drizzle", "postgres-neon"],
+      ].sort(),
+    );
   });
 
-  it("rejects drizzle without a Neon-hosted postgres database", () => {
+  it("resolves the full Docker + Drizzle + Better Auth combination to three providers and two glue fragments", () => {
+    const result = resolve({
+      database: "postgres",
+      postgresHost: "docker",
+      orm: "drizzle",
+      auth: "better-auth",
+    });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers.map((p) => p.id).sort()).toEqual(
+      ["better-auth", "drizzle", "postgres-docker"].sort(),
+    );
+    expect(plan.glue.map((g) => g.between).sort()).toEqual(
+      [
+        ["drizzle", "better-auth"],
+        ["drizzle", "postgres-docker"],
+      ].sort(),
+    );
+  });
+
+  it("allows drizzle with a Docker-hosted postgres database", () => {
     const result = resolve({ database: "postgres", postgresHost: "docker", orm: "drizzle" });
-    expect(isErrors(result)).toBe(true);
+    expect(isErrors(result)).toBe(false);
   });
 
   it("rejects better-auth without drizzle + postgres", () => {
@@ -130,18 +155,24 @@ describe("options", () => {
     ]);
   });
 
-  it("disables drizzle when the postgres host is docker, since no non-Neon driver fragment exists yet", () => {
-    const result = options("orm", { database: "postgres", postgresHost: "docker" });
-
-    expect(result).toHaveLength(1);
-    expect(result[0]?.value).toBe("drizzle");
-    expect(result[0]?.disabled).toBe(true);
-    expect(result[0]?.reason).toContain("neon");
+  it("offers drizzle for the Docker host, now that it has a real driver fragment", () => {
+    expect(options("orm", { database: "postgres", postgresHost: "docker" })).toEqual([
+      { value: "drizzle", label: "Drizzle" },
+    ]);
   });
 
   it("still offers drizzle for the Neon host", () => {
     expect(options("orm", { database: "postgres", postgresHost: "neon" })).toEqual([
       { value: "drizzle", label: "Drizzle" },
     ]);
+  });
+
+  it("disables drizzle for a future unsupported host (e.g. supabase)", () => {
+    const result = options("orm", { database: "postgres", postgresHost: "supabase" });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.value).toBe("drizzle");
+    expect(result[0]?.disabled).toBe(true);
+    expect(result[0]?.reason).toContain("neon, docker");
   });
 });

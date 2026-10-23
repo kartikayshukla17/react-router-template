@@ -1,15 +1,20 @@
 import { defineProvider } from "../define-provider.js";
 
 /**
- * Drizzle ORM, wired against Neon's serverless Postgres driver. Ships the
- * real `app/server/db.ts` client (replacing the throwing stub), a starter
- * schema (`app/db/schema.ts`, a `notes` table used by the demo), and
- * `drizzle.config.ts` for `drizzle-kit`.
+ * Drizzle ORM. Host-independent: ships a starter schema (`app/db/schema.ts`,
+ * a `notes` table used by the demo) and `drizzle.config.ts` for
+ * `drizzle-kit`. The real `app/server/db.ts` client (replacing the throwing
+ * base stub) is NOT shipped here — it's driver-specific (Neon's HTTP driver
+ * vs. a plain TCP `postgres` client for Docker), so it comes from whichever
+ * `drizzle+<host>` glue fragment matches the selected `postgresHost`
+ * (`drizzlePostgresNeonGlue` / `drizzlePostgresDockerGlue` in
+ * `providers/glue/`), selected by `resolver/resolve.ts`'s `selectGlue()`.
  *
  * `requires: database in [postgres]` is the layer-level constraint; the
- * narrower "must specifically be the Neon host" constraint lives in
- * `resolver/rules.ts` (`drizzle-requires-neon-host`) since `Constraint` only
- * models `{layer, oneOf}` pairs, not the `postgresHost` sub-field.
+ * narrower "must be a host with a driver fragment" constraint lives in
+ * `resolver/rules.ts` (`drizzle-requires-supported-host`) since
+ * `Constraint` only models `{layer, oneOf}` pairs, not the `postgresHost`
+ * sub-field.
  */
 export const drizzleProvider = defineProvider({
   layer: "orm",
@@ -24,7 +29,7 @@ export const drizzleProvider = defineProvider({
   },
   env: [],
   files: "providers/orm/drizzle",
-  fileManifest: ["app/server/db.ts", "app/db/schema.ts", "drizzle.config.ts"],
+  fileManifest: ["app/db/schema.ts", "drizzle.config.ts"],
   scripts: {
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",

@@ -1,25 +1,27 @@
 /**
- * Database server interface — real implementation for Drizzle + Neon.
+ * Database server interface — real implementation for Drizzle + a
+ * self-hosted Docker Postgres.
  *
  * Replaces the base template's throwing stub. The only provider SDK imports
  * in the whole generated app live here (and in `app/server/auth.ts`, for
  * the auth provider) — every route reaches the database only through the
- * helpers exported below, never by importing `drizzle-orm` or
- * `@neondatabase/serverless` directly.
+ * helpers exported below, never by importing `drizzle-orm` or `postgres`
+ * directly.
  *
- * Hard-coded against the Neon serverless HTTP driver: this fragment is only
- * ever scaffolded when `postgresHost` is `neon` (enforced by the resolver's
- * `drizzle-requires-neon-host` rule), so there's exactly one driver to wire
- * up today. A future Docker/Supabase-host ticket will need its own
- * host-specific `db.ts` fragment (a `drizzle+<host>` glue), not a change
- * here.
+ * Uses the `postgres` package (postgres.js) over a plain TCP connection via
+ * `drizzle-orm/postgres-js` — the driver Drizzle's docs recommend for a
+ * normal Postgres server. This `drizzle+postgres-docker` glue fragment is
+ * only ever scaffolded when `postgresHost` is `docker`; the Neon host gets
+ * its own sibling fragment, `drizzle+postgres-neon`, wired against Neon's
+ * HTTP/serverless driver instead, since that driver doesn't speak the wire
+ * protocol a plain Docker Postgres container expects.
  */
-import { neon } from "@neondatabase/serverless";
 import { and, desc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { notes } from "../db/schema.js";
 
-const sql = neon(process.env.DATABASE_URL ?? "");
+const sql = postgres(process.env.DATABASE_URL ?? "");
 
 export const db = drizzle({ client: sql });
 
