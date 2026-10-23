@@ -12,15 +12,27 @@
  * `requireUser` throws a redirect `Response` (via React Router's own
  * `redirect()`, not a provider SDK) rather than a plain `Error` — the
  * router catches it and sends the browser to `/sign-in`.
+ *
+ * Dialect-agnostic by construction: Better Auth's Drizzle adapter takes the
+ * drizzle client + schema regardless of SQL dialect, but it does need to be
+ * told which dialect it's talking to (`provider: "pg" | "mysql" |
+ * "sqlite"`). Rather than hard-coding that here (which would make this file
+ * differ between a Postgres-backed and a SQLite-backed project), each
+ * `app/server/db.ts` variant exports its own `dbProvider` constant alongside
+ * `db` — so this file, and everything else in it, is byte-identical no
+ * matter which database/host was selected. Only `db.ts` (driver) and the
+ * users-table schema file (`app/db/auth-schema.ts`, shipped by
+ * `better-auth+drizzle-postgres-schema` or `better-auth+drizzle-sqlite-
+ * schema`) differ by dialect.
  */
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { redirect } from "react-router";
 import * as authSchema from "../db/auth-schema.js";
-import { db } from "./db.js";
+import { db, dbProvider } from "./db.js";
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: "pg", schema: authSchema }),
+  database: drizzleAdapter(db, { provider: dbProvider, schema: authSchema }),
   emailAndPassword: { enabled: true },
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,

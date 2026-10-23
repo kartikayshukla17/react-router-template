@@ -14,5 +14,8 @@ export const drizzlePostgresSupabaseGlue: Glue = {
   deps: {
     postgres: "^3.4.9",
   },
-  fileManifest: ["app/server/db.ts"],
+  // Also ships the Postgres-flavored starter schema and drizzle-kit config
+  // (ticket 006) — see drizzle-postgres-docker.ts for why these moved here
+  // from `orm/drizzle`.
+  fileManifest: ["app/server/db.ts", "app/db/schema.ts", "drizzle.config.ts"],
 };

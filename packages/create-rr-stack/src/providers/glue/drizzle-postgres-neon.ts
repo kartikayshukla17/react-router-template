@@ -12,5 +12,8 @@ import type { Glue } from "../../resolver/types.js";
 export const drizzlePostgresNeonGlue: Glue = {
   between: ["drizzle", "postgres-neon"],
   files: "glue/drizzle+postgres-neon",
-  fileManifest: ["app/server/db.ts"],
+  // Also ships the Postgres-flavored starter schema and drizzle-kit config
+  // (ticket 006) — see drizzle-postgres-docker.ts for why these moved here
+  // from `orm/drizzle`.
+  fileManifest: ["app/server/db.ts", "app/db/schema.ts", "drizzle.config.ts"],
 };

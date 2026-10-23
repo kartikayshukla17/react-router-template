@@ -36,6 +36,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.database === "sqlite") {
+    const provider = findProvider("database", "sqlite");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   if (selections.orm === "drizzle") {
     const provider = findProvider("orm", "drizzle");
     if (provider) {
@@ -76,10 +83,32 @@ function selectGlue(selections: Selections): Glue[] {
     }
   }
 
-  if (selections.orm === "drizzle" && selections.auth === "better-auth") {
-    const fragment = findGlue("drizzle", "better-auth");
+  if (selections.orm === "drizzle" && selections.database === "sqlite") {
+    // SQLite has no host concept, so there's exactly one driver fragment
+    // to pick, unconditionally, once SQLite is the selected database — no
+    // `postgresHost`-style branching needed.
+    const fragment = findGlue("drizzle", "sqlite");
     if (fragment) {
       glue.push(fragment);
+    }
+  }
+
+  if (selections.orm === "drizzle" && selections.auth === "better-auth") {
+    const wiring = findGlue("drizzle", "better-auth");
+    if (wiring) {
+      glue.push(wiring);
+    }
+
+    // The users-table schema is dialect-specific (ticket 006): look up the
+    // sibling glue fragment keyed on `["better-auth", <dialect>]` — see
+    // `betterAuthDrizzlePostgresSchemaGlue`/`betterAuthDrizzleSqliteSchemaGlue`
+    // in `providers/glue/better-auth-drizzle.ts` for why the second id is
+    // `selections.database` itself rather than a host provider id.
+    if (selections.database) {
+      const schemaFragment = findGlue("better-auth", selections.database);
+      if (schemaFragment) {
+        glue.push(schemaFragment);
+      }
     }
   }
 

@@ -44,7 +44,7 @@ describe("resolve", () => {
     expect(plan.installOrder).toEqual(["postgres-neon"]);
   });
 
-  it("resolves the full Neon + Drizzle + Better Auth combination to three providers and two glue fragments", () => {
+  it("resolves the full Neon + Drizzle + Better Auth combination to three providers and three glue fragments", () => {
     const result = resolve({
       database: "postgres",
       postgresHost: "neon",
@@ -59,13 +59,14 @@ describe("resolve", () => {
     );
     expect(plan.glue.map((g) => g.between).sort()).toEqual(
       [
+        ["better-auth", "postgres"],
         ["drizzle", "better-auth"],
         ["drizzle", "postgres-neon"],
       ].sort(),
     );
   });
 
-  it("resolves the full Docker + Drizzle + Better Auth combination to three providers and two glue fragments", () => {
+  it("resolves the full Docker + Drizzle + Better Auth combination to three providers and three glue fragments", () => {
     const result = resolve({
       database: "postgres",
       postgresHost: "docker",
@@ -80,10 +81,47 @@ describe("resolve", () => {
     );
     expect(plan.glue.map((g) => g.between).sort()).toEqual(
       [
+        ["better-auth", "postgres"],
         ["drizzle", "better-auth"],
         ["drizzle", "postgres-docker"],
       ].sort(),
     );
+  });
+
+  it("resolves SQLite + Drizzle + Better Auth to three providers, three glue fragments, and zero database env vars", () => {
+    const result = resolve({
+      database: "sqlite",
+      orm: "drizzle",
+      auth: "better-auth",
+    });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers.map((p) => p.id).sort()).toEqual(
+      ["better-auth", "drizzle", "sqlite"].sort(),
+    );
+    expect(plan.glue.map((g) => g.between).sort()).toEqual(
+      [
+        ["better-auth", "sqlite"],
+        ["drizzle", "better-auth"],
+        ["drizzle", "sqlite"],
+      ].sort(),
+    );
+    // No DATABASE_URL, no account signup — only whatever Better Auth itself
+    // recommends (BETTER_AUTH_SECRET/URL), which is independent of which
+    // database was chosen.
+    expect(plan.env.map((e) => e.name)).not.toContain("DATABASE_URL");
+  });
+
+  it("resolves sqlite alone to exactly the sqlite provider, with no env vars", () => {
+    const result = resolve({ database: "sqlite" });
+
+    expect(isErrors(result)).toBe(false);
+    const plan = result as Plan;
+    expect(plan.providers).toHaveLength(1);
+    expect(plan.providers[0]?.id).toBe("sqlite");
+    expect(plan.providers[0]?.layer).toBe("database");
+    expect(plan.env).toEqual([]);
   });
 
   it("allows drizzle with a Docker-hosted postgres database", () => {
@@ -157,6 +195,7 @@ describe("resolve", () => {
     expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
     expect(plan.glue.map((g) => g.between).sort()).toEqual(
       [
+        ["better-auth", "postgres"],
         ["drizzle", "better-auth"],
         ["drizzle", "postgres-supabase"],
       ].sort(),
@@ -246,9 +285,12 @@ describe("resolve", () => {
 });
 
 describe("options", () => {
-  it("lists postgres as a database option", () => {
+  it("lists postgres and sqlite as database options", () => {
     const result = options("database", {});
-    expect(result).toEqual([{ value: "postgres", label: "PostgreSQL" }]);
+    expect(result).toEqual([
+      { value: "postgres", label: "PostgreSQL" },
+      { value: "sqlite", label: "SQLite (local file)" },
+    ]);
   });
 
   it("returns an empty list for layers with no registered providers yet", () => {
@@ -295,6 +337,18 @@ describe("options", () => {
   it("offers drizzle for the Supabase host, now that it has a real driver fragment", () => {
     expect(options("orm", { database: "postgres", postgresHost: "supabase" })).toEqual([
       { value: "drizzle", label: "Drizzle" },
+    ]);
+  });
+
+  it("offers drizzle for sqlite — no host-driver concern applies there", () => {
+    expect(options("orm", { database: "sqlite" })).toEqual([
+      { value: "drizzle", label: "Drizzle" },
+    ]);
+  });
+
+  it("offers better-auth once database is sqlite and orm is drizzle", () => {
+    expect(options("auth", { database: "sqlite", orm: "drizzle" })).toEqual([
+      { value: "better-auth", label: "Better Auth" },
     ]);
   });
 

@@ -23,6 +23,13 @@ const sql = neon(process.env.DATABASE_URL ?? "");
 
 export const db = drizzle({ client: sql });
 
+/**
+ * Tells the dialect-agnostic `app/server/auth.ts` (shipped by the
+ * `better-auth+drizzle` glue fragment, shared across every database/host
+ * combination) which Better Auth Drizzle-adapter dialect to speak.
+ */
+export const dbProvider = "pg" as const;
+
 export interface Note {
   id: string;
   userId: string;

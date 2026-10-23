@@ -15,5 +15,11 @@ export const drizzlePostgresDockerGlue: Glue = {
   deps: {
     postgres: "^3.4.9",
   },
-  fileManifest: ["app/server/db.ts"],
+  // Also ships the Postgres-flavored starter schema and drizzle-kit config
+  // (ticket 006): these used to live on `orm/drizzle` itself, but SQLite
+  // needs different column types and a different `dialect`, so they moved
+  // to whichever `drizzle+<host>`/`drizzle+sqlite` fragment is selected.
+  // Identical content across all three Postgres hosts (only `db.ts`'s
+  // driver differs per host).
+  fileManifest: ["app/server/db.ts", "app/db/schema.ts", "drizzle.config.ts"],
 };
