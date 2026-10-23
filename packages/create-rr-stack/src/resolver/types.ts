@@ -6,16 +6,27 @@
  */
 
 /**
- * `"baas"` is the third intentional extension beyond PRD.md §8's literal
- * `Layer` union (alongside `Provider.baas` and `Selections.postgresHost`,
- * both already present): the layer a shared BaaS client fragment (e.g.
- * `supabase-client`, see `providers/baas/`) lives on. Nothing is ever
- * selected directly onto this layer through `Selections` — no prompt asks
- * for it — `resolve()`'s `selectBaasClients()` is the only thing that ever
- * adds a `baas`-layer provider to a `Plan`, computed from which *other*
- * selected providers declare `Provider.baas`.
+ * The PRD's real, user-facing `Layer` union — every layer a prompt can
+ * actually ask about and a `Selections`/`Constraint` can actually name.
+ * `"baas"` is deliberately NOT a member: it is never selectable, so it
+ * must not type-check as a `Constraint.layer` or a `Selections` field (see
+ * `ProviderLayer` below for why a provider's own `layer` is still wider).
  */
-export type Layer = "database" | "orm" | "auth" | "storage" | "realtime" | "baas";
+export type SelectableLayer = "database" | "orm" | "auth" | "storage" | "realtime";
+
+/**
+ * `Provider.layer`'s type: every `SelectableLayer`, plus `"baas"` — the
+ * layer a shared BaaS client fragment (e.g. `supabase-client`, see
+ * `providers/baas/`) lives on. Nothing is ever selected directly onto
+ * `"baas"` through `Selections` — no prompt asks for it, no `Constraint`
+ * can reference it, it has no `Selections` field — `resolve()`'s
+ * `selectBaasClients()` is the only thing that ever adds a `baas`-layer
+ * provider to a `Plan`, computed from which *other* selected providers
+ * declare `Provider.baas`. Keeping `"baas"` out of `SelectableLayer`
+ * means `selections.baas = "..."` and `{layer: "baas", oneOf: [...]}` are
+ * both compile errors, rather than silently-dead API surface.
+ */
+export type ProviderLayer = SelectableLayer | "baas";
 
 /** A single prompt option surfaced by `options(layer, partial)`. */
 export interface Option {
@@ -36,12 +47,12 @@ export interface EnvVar {
 
 /** `requires`/`conflicts` entry: a layer must (or must not) be one of a set of ids. */
 export interface Constraint {
-  layer: Layer;
+  layer: SelectableLayer;
   oneOf: string[];
 }
 
 export interface Provider {
-  layer: Layer;
+  layer: ProviderLayer;
   id: string;
   label: string;
   baas?: "supabase" | "firebase" | "convex";
@@ -101,13 +112,6 @@ export interface Selections {
   auth?: string;
   storage?: string;
   realtime?: string;
-  /**
-   * No prompt ever sets this directly (see `Layer`'s doc comment above) —
-   * present only so `selections[layer]` type-checks for every `Layer`
-   * value in `rules.ts`/`options.ts`, which index `Selections` generically
-   * by whatever `Layer` a `Constraint` or availability check names.
-   */
-  baas?: string;
   postgresHost?: "docker" | "neon" | "supabase";
   extras?: { shadcn: boolean; docker: boolean; example: boolean };
 }
@@ -123,7 +127,7 @@ export interface Plan {
 export interface ResolverError {
   code: string;
   message: string;
-  layer?: Layer;
+  layer?: SelectableLayer;
 }
 
 export interface Errors {

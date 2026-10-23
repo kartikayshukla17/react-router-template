@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { options } from "../src/resolver/options.js";
 import { resolve, selectBaasClients } from "../src/resolver/resolve.js";
-import { isErrors, type Plan, type Provider, type Selections } from "../src/resolver/types.js";
+import {
+  type Constraint,
+  isErrors,
+  type Plan,
+  type Provider,
+  type Selections,
+} from "../src/resolver/types.js";
 
 describe("resolve", () => {
   it("returns an empty, valid Plan for an empty selection", () => {
@@ -210,6 +216,31 @@ describe("resolve", () => {
       ).providers.find((p) => p.id === "postgres-docker");
 
       expect(selectBaasClients([dockerProvider as Provider])).toEqual([]);
+    });
+
+    /**
+     * Post-review fix (Important finding 2): `"baas"` must not be a
+     * selectable layer. These two assignments are compile errors with the
+     * narrowed `SelectableLayer`/`Selections` types — `@ts-expect-error`
+     * makes that a checked fact (caught by `tsc --noEmit`, not just this
+     * test's runtime assertion, which only confirms the lines are
+     * reachable at all).
+     */
+    it("rejects selections.baas and a baas Constraint at the type level", () => {
+      const selections: Selections = {};
+      // @ts-expect-error — Selections has no "baas" field; it was removed
+      // so this can never silently compile to a no-op.
+      selections.baas = "supabase";
+
+      const badConstraint: Constraint = {
+        // @ts-expect-error — Constraint.layer is SelectableLayer, which
+        // excludes "baas"; a constraint naming it would always fail
+        // silently with a confusing message instead of failing to compile.
+        layer: "baas",
+        oneOf: ["supabase"],
+      };
+
+      expect(badConstraint.oneOf).toEqual(["supabase"]);
     });
   });
 });

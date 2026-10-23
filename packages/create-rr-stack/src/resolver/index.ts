@@ -8,11 +8,12 @@ export {
   type Errors,
   type Glue,
   isErrors,
-  type Layer,
   type Option,
   type Plan,
   type Provider,
+  type ProviderLayer,
   type ResolveResult,
   type ResolverError,
+  type SelectableLayer,
   type Selections,
 } from "./types.js";

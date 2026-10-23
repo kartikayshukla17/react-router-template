@@ -6,22 +6,18 @@
 
 import { findProvider } from "../providers/registry.js";
 import { providerAvailabilityChecks } from "./rules.js";
-import type { Constraint, Layer, Option, Selections } from "./types.js";
+import type { Constraint, Option, SelectableLayer, Selections } from "./types.js";
 
 const DATABASE_OPTIONS: Option[] = [{ value: "postgres", label: "PostgreSQL" }];
 const ORM_OPTIONS: Option[] = [{ value: "drizzle", label: "Drizzle" }];
 const AUTH_OPTIONS: Option[] = [{ value: "better-auth", label: "Better Auth" }];
 
-const REGISTERED_OPTIONS: Record<Layer, Option[]> = {
+const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {
   database: DATABASE_OPTIONS,
   orm: ORM_OPTIONS,
   auth: AUTH_OPTIONS,
   storage: [],
   realtime: [],
-  // No prompt ever asks for "baas" directly — `resolve()`'s
-  // `selectBaasClients()` is the only thing that adds a baas-layer
-  // provider to a Plan. See `resolver/types.ts`'s `Layer` doc comment.
-  baas: [],
 };
 
 function unmetConstraintReason(
@@ -45,7 +41,7 @@ function unmetConstraintReason(
   return undefined;
 }
 
-export function options(layer: Layer, partial: Selections): Option[] {
+export function options(layer: SelectableLayer, partial: Selections): Option[] {
   const registered = REGISTERED_OPTIONS[layer] ?? [];
 
   return registered.map((option) => {

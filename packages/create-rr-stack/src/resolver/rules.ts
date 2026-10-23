@@ -6,7 +6,7 @@
  */
 
 import { findProvider } from "../providers/registry.js";
-import type { Layer, ResolverError, Selections } from "./types.js";
+import type { ResolverError, SelectableLayer, Selections } from "./types.js";
 
 export interface Rule {
   id: string;
@@ -16,7 +16,7 @@ export interface Rule {
 const SUPPORTED_POSTGRES_HOSTS = ["docker", "neon", "supabase"] as const;
 
 /** Layers whose selection is a real provider id looked up directly in the registry. */
-const REQUIRES_CHECKED_LAYERS: Layer[] = ["orm", "auth", "storage", "realtime"];
+const REQUIRES_CHECKED_LAYERS: SelectableLayer[] = ["orm", "auth", "storage", "realtime"];
 
 /**
  * Availability checks keyed by provider id, for constraints that `Provider.
