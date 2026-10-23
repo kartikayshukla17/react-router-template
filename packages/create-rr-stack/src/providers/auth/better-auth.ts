@@ -14,7 +14,7 @@ export const betterAuthProvider = defineProvider({
   label: "Better Auth",
   requires: [
     { layer: "orm", oneOf: ["drizzle"] },
-    { layer: "database", oneOf: ["postgres"] },
+    { layer: "database", oneOf: ["postgres", "sqlite"] },
   ],
   deps: {
     "better-auth": "^1.7.12",

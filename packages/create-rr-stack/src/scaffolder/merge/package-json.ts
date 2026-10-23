@@ -55,6 +55,9 @@ export function mergePackageJson(
     if (fragment.deps) {
       Object.assign(base.dependencies, fragment.deps);
     }
+    if (fragment.devDeps) {
+      Object.assign(base.devDependencies, fragment.devDeps);
+    }
   }
 
   return `${JSON.stringify(base, null, 2)}\n`;

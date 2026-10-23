@@ -8,7 +8,10 @@ import { findProvider } from "../providers/registry.js";
 import { providerAvailabilityChecks } from "./rules.js";
 import type { Constraint, Option, SelectableLayer, Selections } from "./types.js";
 
-const DATABASE_OPTIONS: Option[] = [{ value: "postgres", label: "PostgreSQL" }];
+const DATABASE_OPTIONS: Option[] = [
+  { value: "postgres", label: "PostgreSQL" },
+  { value: "sqlite", label: "SQLite (local file)" },
+];
 const ORM_OPTIONS: Option[] = [{ value: "drizzle", label: "Drizzle" }];
 const AUTH_OPTIONS: Option[] = [{ value: "better-auth", label: "Better Auth" }];
 

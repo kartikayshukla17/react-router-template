@@ -91,6 +91,13 @@ export interface Glue {
   files: string;
   deps?: Record<string, string>;
   /**
+   * Same rationale as `Provider.devDeps`: `drizzle+sqlite` is the first
+   * glue fragment that needs a dev-only dependency (`@types/better-sqlite3`
+   * alongside the runtime `better-sqlite3` dep) — optional because no
+   * other glue fragment needs one yet.
+   */
+  devDeps?: Record<string, string>;
+  /**
    * Same rationale as `Provider.fileManifest`: the scaffolder's `FileSystem`
    * seam has no directory-listing primitive, so a glue fragment declares the
    * relative paths it ships instead of the scaffolder discovering them by

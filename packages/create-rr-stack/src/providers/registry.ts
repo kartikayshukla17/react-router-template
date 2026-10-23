@@ -3,6 +3,7 @@ import { betterAuthProvider } from "./auth/better-auth.js";
 import { postgresDockerProvider } from "./database/postgres-docker.js";
 import { postgresNeonProvider } from "./database/postgres-neon.js";
 import { postgresSupabaseProvider } from "./database/postgres-supabase.js";
+import { sqliteProvider } from "./database/sqlite.js";
 import { drizzleProvider } from "./orm/drizzle.js";
 
 /**
@@ -22,6 +23,7 @@ export const allProviders: readonly Provider[] = [
   postgresDockerProvider,
   postgresNeonProvider,
   postgresSupabaseProvider,
+  sqliteProvider,
   drizzleProvider,
   betterAuthProvider,
 ];
