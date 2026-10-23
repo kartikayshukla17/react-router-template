@@ -108,9 +108,16 @@ describe("options", () => {
 
   it("lists drizzle as an orm option, disabled with a reason until database is postgres", () => {
     expect(options("orm", {})).toEqual([
-      { value: "drizzle", label: "Drizzle", disabled: true, reason: expect.stringContaining("database") },
+      {
+        value: "drizzle",
+        label: "Drizzle",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
     ]);
-    expect(options("orm", { database: "postgres" })).toEqual([{ value: "drizzle", label: "Drizzle" }]);
+    expect(options("orm", { database: "postgres" })).toEqual([
+      { value: "drizzle", label: "Drizzle" },
+    ]);
   });
 
   it("lists better-auth as an auth option, disabled until orm is drizzle and database is postgres", () => {

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /**
  * Absolute path to the repo's `templates/` directory, computed from this
@@ -33,7 +33,9 @@ function findTemplatesRoot(): string {
     dir = parent;
   }
 
-  throw new Error("Could not locate the repo's templates/ directory from providers/templates-root.ts");
+  throw new Error(
+    "Could not locate the repo's templates/ directory from providers/templates-root.ts",
+  );
 }
 
 export const templatesRoot = findTemplatesRoot();

@@ -38,7 +38,5 @@ export const betterAuthProvider = defineProvider({
   ],
   files: path.join(templatesRoot, "providers/auth/better-auth"),
   fileManifest: [],
-  nextSteps: [
-    "Set BETTER_AUTH_SECRET in your .env file (a random 32+ byte string).",
-  ],
+  nextSteps: ["Set BETTER_AUTH_SECRET in your .env file (a random 32+ byte string)."],
 });

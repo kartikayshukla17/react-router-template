@@ -39,7 +39,8 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
     message: "Project name (also the directory to create)",
     placeholder: "my-app",
     defaultValue: "my-app",
-    validate: (value) => ((value ?? "").trim().length === 0 ? "Project name can't be empty." : undefined),
+    validate: (value) =>
+      (value ?? "").trim().length === 0 ? "Project name can't be empty." : undefined,
   });
   if (p.isCancel(projectNameResult)) {
     return cancelledWithNothingWritten();
@@ -126,7 +127,13 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
   }
   const plan = result;
 
-  p.note(formatPlanSummary(selections, plan.providers.map((provider) => provider.label)), "Plan");
+  p.note(
+    formatPlanSummary(
+      selections,
+      plan.providers.map((provider) => provider.label),
+    ),
+    "Plan",
+  );
 
   const confirmed = await p.confirm({
     message: `Write this project to ${targetDir}?`,
