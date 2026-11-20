@@ -1,0 +1,88 @@
+name: Combo matrix
+
+# A reusable workflow (ticket 018): `ci.yml` calls it against the commit
+# that triggered the push/PR; the weekly dependency bump (`weekly-
+# dependency-bump.yml`) calls the exact same job against its scratch
+# branch instead, so "does a dependency bump actually work" is checked
+# with the identical matrix on-push CI already trusts, not a second,
+# drifting copy of it.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: The git ref to check out and test.
+        type: string
+        required: true
+
+jobs:
+  # Install + typecheck + build a representative set of real generated
+  # projects, on ubuntu only (per PRD.md's "no Cloudflare/Vercel adapters
+  # in v1, Node server only" scope — ubuntu is where that server runs).
+  # Chosen to cover every database host, ORM, auth provider, storage
+  # provider, and realtime provider at least once across 8 combos, not a
+  # full cartesian product (that's what combo-snapshot.test.ts's
+  # file-list check owns, cheaply, without a real npm install per combo).
+  combo-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        combo:
+          - name: neon-drizzle-better-auth-s3
+            args: >-
+              --db postgres --postgres-host neon --orm drizzle
+              --auth better-auth --storage s3-presigned
+          - name: docker-postgres-prisma-clerk
+            args: >-
+              --db postgres --postgres-host docker --orm prisma
+              --auth clerk
+          - name: sqlite-drizzle-firebase-auth-supabase-storage
+            args: --db sqlite --orm drizzle --auth firebase-auth --storage supabase-storage
+          - name: mongo-docker-mongoose-supabase-auth
+            args: --db mongodb --mongo-host docker --orm mongoose --auth supabase-auth
+          - name: convex-bundle
+            args: --db convex
+            # Convex's generated api/dataModel types (convex/_generated/)
+            # don't exist until `npx convex dev` runs against a live,
+            # authenticated deployment (ticket 012's documented
+            # limitation) — not something CI can do without a Convex
+            # account's deploy key as a secret, which is out of this
+            # ticket's scope. Generate + install still run and still
+            # catch a real regression (a missing template file, a broken
+            # dependency); typecheck/build are skipped for this combo
+            # only, not silently — this comment is why.
+            skipTypecheckBuild: true
+          - name: empty-stack
+            args: ""
+          - name: supabase-postgres-drizzle-firebase-storage-realtime
+            args: >-
+              --db postgres --postgres-host supabase --orm drizzle
+              --storage firebase-storage --realtime supabase-realtime
+          - name: mongo-hosted-mongoose-clerk-s3
+            args: >-
+              --db mongodb --mongo-host hosted --orm mongoose
+              --auth clerk --storage s3-presigned
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=22.22.0"
+      - run: npm ci
+      - run: npm run build --workspace=create-rr-stack
+      - name: Generate (${{ matrix.combo.name }})
+        run: |
+          node packages/create-rr-stack/dist/cli.mjs generated-app \
+            ${{ matrix.combo.args }} --yes --no-install --no-git
+      - name: Install
+        working-directory: generated-app
+        run: npm install
+      - name: Typecheck
+        if: ${{ !matrix.combo.skipTypecheckBuild }}
+        working-directory: generated-app
+        run: npm run typecheck
+      - name: Build
+        if: ${{ !matrix.combo.skipTypecheckBuild }}
+        working-directory: generated-app
+        run: npm run build

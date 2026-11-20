@@ -1,0 +1,107 @@
+name: Weekly dependency bump
+
+# Ticket 018: keep every pinned provider dependency from going stale
+# without risking a silent break. `workflow_dispatch` is here so this can
+# be tested (or re-run after a real failure) without waiting a week.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.bump.outputs.changed }}
+      branch: ${{ steps.bump.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=22.22.0"
+      - run: npm ci
+      - name: Resolve latest versions and bump manifests
+        id: bump
+        run: node scripts/bump-dependencies.mjs
+      - name: Upload bump summary
+        if: steps.bump.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-bump-summary
+          path: dependency-bump-summary.md
+      - name: Push scratch branch
+        if: steps.bump.outputs.changed == 'true'
+        # dependency-bump-summary.md is deliberately NOT committed here —
+        # it's already uploaded as an artifact above for open-pr/
+        # failure-summary to read, so the branch/PR diff stays just the
+        # real version changes, not a throwaway report file alongside them.
+        run: |
+          rm dependency-bump-summary.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${{ steps.bump.outputs.branch }}"
+          git add -A
+          git commit -m "chore(deps): weekly provider dependency bump"
+          git push origin "${{ steps.bump.outputs.branch }}"
+
+  # Same matrix ci.yml runs on every push (combo-matrix.yml), against the
+  # scratch branch instead of the triggering commit — "only propose the
+  # bump if it passes" (the ticket's own words) means this, not the bump
+  # job's own `npm ci`/typecheck succeeding, which never touches a
+  # generated project at all.
+  verify:
+    needs: bump
+    if: needs.bump.outputs.changed == 'true'
+    uses: ./.github/workflows/combo-matrix.yml
+    with:
+      ref: ${{ needs.bump.outputs.branch }}
+
+  # Only reached if `verify` succeeded — a failed or skipped dependency
+  # job skips its dependents by default, so this job opening a PR at all
+  # already means the matrix passed.
+  open-pr:
+    needs: [bump, verify]
+    if: needs.bump.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bump.outputs.branch }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: dependency-bump-summary
+      - name: Open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore(deps): weekly provider dependency bump" \
+            --body-file dependency-bump-summary.md \
+            --base main \
+            --head "${{ needs.bump.outputs.branch }}"
+
+  # Reached when the bump found updates but the matrix failed on them —
+  # no PR is opened; this is the readable failure summary the ticket
+  # asks for, naming both the failing combo (GitHub's own job-name UI for
+  # the matrix already does this per `combo-matrix.yml`'s `matrix.combo.
+  # name`) and the full set of dependencies this run tried to bump, so
+  # investigating doesn't start from zero.
+  failure-summary:
+    needs: [bump, verify]
+    if: always() && needs.bump.outputs.changed == 'true' && needs.verify.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dependency-bump-summary
+      - name: Report failure
+        run: |
+          echo "::error::Weekly dependency bump failed the combo matrix — see the 'verify' job above for which combo broke. No PR was opened. Dependencies this run tried to bump:"
+          cat dependency-bump-summary.md
