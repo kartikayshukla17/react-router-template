@@ -219,6 +219,55 @@ export const rules: Rule[] = [
   },
   {
     /**
+     * Ticket 012's documented decision: Convex is all-or-nothing across
+     * database/auth/realtime, not three independently-combinable layers
+     * that happen to share a name. `selectProviders()` auto-adds
+     * `convex-auth`/`convex` (realtime) whenever `database` is `"convex"`,
+     * regardless of whether `selections.auth`/`realtime` were left unset —
+     * so this rule only needs to catch the case those fields were set to
+     * something ELSE, which `selectProviders()` can't silently override
+     * without masking a real conflict (e.g. the ticket's own example,
+     * `--db convex --auth clerk`). Checking `orm` too is what makes "no
+     * ORM prompt appears at all once Convex is chosen" an enforced
+     * invariant rather than just a CLI-flow convention.
+     *
+     * One-directional by design: `convex-auth`/realtime `convex` each
+     * declare their own `requires: [{layer: "database", oneOf: ["convex"]}]`
+     * (checked by `provider-requires-and-conflicts` below), so picking
+     * either of those without `database: "convex"` is already rejected —
+     * this rule only needs to guard the other direction.
+     */
+    id: "convex-is-all-or-nothing",
+    check(selections) {
+      if (selections.database !== "convex") {
+        return null;
+      }
+      if (selections.orm !== undefined) {
+        return {
+          code: "CONVEX_ORM_CONFLICT",
+          message: `database "convex" has no separate ORM — remove orm "${selections.orm}" (Convex's client is the data layer).`,
+          layer: "orm",
+        };
+      }
+      if (selections.auth !== undefined && selections.auth !== "convex-auth") {
+        return {
+          code: "CONVEX_AUTH_CONFLICT",
+          message: `database "convex" requires auth to be "convex-auth" (got "${selections.auth}"); Convex is all-or-nothing across database/auth/realtime.`,
+          layer: "auth",
+        };
+      }
+      if (selections.realtime !== undefined && selections.realtime !== "convex") {
+        return {
+          code: "CONVEX_REALTIME_CONFLICT",
+          message: `database "convex" requires realtime to be "convex" (got "${selections.realtime}"); Convex is all-or-nothing across database/auth/realtime.`,
+          layer: "realtime",
+        };
+      }
+      return null;
+    },
+  },
+  {
+    /**
      * Generic requires/conflicts check driven entirely by each selected
      * provider's own manifest (`Provider.requires`/`Provider.conflicts`),
      * rather than hard-coded per-combination logic. Covers, e.g., "orm

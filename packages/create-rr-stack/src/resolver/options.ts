@@ -12,6 +12,7 @@ const DATABASE_OPTIONS: Option[] = [
   { value: "postgres", label: "PostgreSQL" },
   { value: "sqlite", label: "SQLite (local file)" },
   { value: "mongodb", label: "MongoDB" },
+  { value: "convex", label: "Convex (database + auth + realtime bundle)" },
 ];
 const ORM_OPTIONS: Option[] = [
   { value: "drizzle", label: "Drizzle" },
@@ -23,14 +24,16 @@ const AUTH_OPTIONS: Option[] = [
   { value: "clerk", label: "Clerk" },
   { value: "supabase-auth", label: "Supabase Auth" },
   { value: "firebase-auth", label: "Firebase Auth" },
+  { value: "convex-auth", label: "Convex Auth" },
 ];
+const REALTIME_OPTIONS: Option[] = [{ value: "convex", label: "Convex Realtime" }];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {
   database: DATABASE_OPTIONS,
   orm: ORM_OPTIONS,
   auth: AUTH_OPTIONS,
   storage: [],
-  realtime: [],
+  realtime: REALTIME_OPTIONS,
 };
 
 function unmetConstraintReason(

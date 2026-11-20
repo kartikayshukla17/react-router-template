@@ -331,7 +331,7 @@ react-router-template/
 - **Risk:** Provider SDK majors break fragments. *Mitigation:* pinned versions and the gated weekly bump job.
 - **Risk:** The common-interface adapters (`auth`, `storage`, `realtime`) lose provider-specific features. *Mitigation:* adapters expose the minimal shared surface; provider-specific code can still be used in non-demo files.
 - **Q:** Final npm package name — *Owner: Kartikay* (check availability before first publish).
-- **Q:** Does Convex (database + auth + realtime in one) appear as three layer choices or a bundle shortcut in the prompts? Default: three choices, with the resolver pre-selecting Convex for the rest once one layer picks it. — *Owner: Kartikay*
+- **Resolved (ticket 012):** Convex (database + auth + realtime in one) appears as three choices in the prompt list, pre-selected together — picking Convex at the database prompt skips the ORM prompt and pre-fills auth/realtime as Convex, with the skip reason shown; the resolver rejects any other combination (Convex is all-or-nothing across those three layers, not independently mixable).
 - **Tradeoff:** No user-sync table for third-party auth in v1; app tables reference the provider's user id as text.
 - **Tradeoff:** No Cloudflare/Vercel adapters in v1; Node server only.
 

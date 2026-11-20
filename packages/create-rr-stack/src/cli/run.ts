@@ -99,28 +99,42 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
     selections.mongoHost = host;
   }
 
-  const ormChoices: ClackOption[] = [
-    ...availableOptions(options("orm", selections)),
-    { value: "none", label: "None" },
-  ];
-  const orm = await p.select<string>({ message: "ORM", options: ormChoices });
-  if (p.isCancel(orm)) {
-    return cancelledWithNothingWritten();
-  }
-  if (orm !== "none") {
-    selections.orm = orm;
-  }
+  if (selections.database === "convex") {
+    // Ticket 012's documented decision: Convex is all-or-nothing across
+    // database/auth/realtime, not three independently-combinable layers.
+    // No ORM prompt at all (Convex's own client is the data layer), and
+    // auth is pre-filled rather than asked — `resolve()` would reject any
+    // other answer anyway (`rules.ts`'s `convex-is-all-or-nothing`), so
+    // asking would only ever offer one real choice.
+    selections.auth = "convex-auth";
+    p.log.info(
+      "Convex selected: skipping the ORM prompt (Convex's client is the data layer) " +
+        'and using "Convex Auth" for auth — Convex bundles database, auth, and realtime together.',
+    );
+  } else {
+    const ormChoices: ClackOption[] = [
+      ...availableOptions(options("orm", selections)),
+      { value: "none", label: "None" },
+    ];
+    const orm = await p.select<string>({ message: "ORM", options: ormChoices });
+    if (p.isCancel(orm)) {
+      return cancelledWithNothingWritten();
+    }
+    if (orm !== "none") {
+      selections.orm = orm;
+    }
 
-  const authChoices: ClackOption[] = [
-    ...availableOptions(options("auth", selections)),
-    { value: "none", label: "None" },
-  ];
-  const auth = await p.select<string>({ message: "Auth", options: authChoices });
-  if (p.isCancel(auth)) {
-    return cancelledWithNothingWritten();
-  }
-  if (auth !== "none") {
-    selections.auth = auth;
+    const authChoices: ClackOption[] = [
+      ...availableOptions(options("auth", selections)),
+      { value: "none", label: "None" },
+    ];
+    const auth = await p.select<string>({ message: "Auth", options: authChoices });
+    if (p.isCancel(auth)) {
+      return cancelledWithNothingWritten();
+    }
+    if (auth !== "none") {
+      selections.auth = auth;
+    }
   }
 
   // No "Include the demo app?" prompt: the demo routes (landing, sign-in,

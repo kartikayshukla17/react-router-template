@@ -1,0 +1,36 @@
+import { defineProvider } from "../define-provider.js";
+
+/**
+ * Convex Auth (ticket 012) — always bundled with `database/convex` (never
+ * selected alone; see `resolver/rules.ts`'s `convex-is-all-or-nothing`),
+ * so this manifest's own `requires` is what makes a stray `--auth
+ * convex-auth` without `--db convex` fail with a clear reason via the
+ * generic `provider-requires-and-conflicts` rule.
+ *
+ * Needs no `deps` of its own: `convex` (the only package its files
+ * import) is pinned on `database/convex`, which is always present
+ * whenever this provider is. Ships the whole self-contained demo (home/
+ * sign-in/dashboard/notes/routes.ts/auth.ts) the same way Clerk/Supabase
+ * Auth/Firebase Auth do, plus `convex/auth.ts` — hand-rolled password
+ * functions, not `@convex-dev/auth` (see that file's doc comment for why).
+ */
+export const convexAuthProvider = defineProvider({
+  layer: "auth",
+  id: "convex-auth",
+  label: "Convex Auth",
+  requires: [{ layer: "database", oneOf: ["convex"] }],
+  deps: {},
+  devDeps: {},
+  env: [],
+  files: "providers/auth/convex-auth",
+  fileManifest: [
+    "convex/auth.ts",
+    "app/routes.ts",
+    "app/routes/home.tsx",
+    "app/routes/sign-in.tsx",
+    "app/routes/dashboard.tsx",
+    "app/routes/notes.tsx",
+    "app/server/auth.ts",
+  ],
+  nextSteps: [],
+});

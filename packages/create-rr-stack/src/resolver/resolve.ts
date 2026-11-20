@@ -57,6 +57,26 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.database === "convex") {
+    // Ticket 012's all-or-nothing bundle: auth/realtime are pulled in
+    // unconditionally here, never through the per-field `selections.auth`/
+    // `selections.realtime` checks below (those only ever fire for a
+    // non-Convex value anyway — `rules.ts`'s `convex-is-all-or-nothing`
+    // already rejected a different one before `selectProviders()` runs).
+    const dbProvider = findProvider("database", "convex");
+    if (dbProvider) {
+      selected.push(dbProvider);
+    }
+    const authProvider = findProvider("auth", "convex-auth");
+    if (authProvider) {
+      selected.push(authProvider);
+    }
+    const realtimeProvider = findProvider("realtime", "convex");
+    if (realtimeProvider) {
+      selected.push(realtimeProvider);
+    }
+  }
+
   if (selections.orm === "drizzle") {
     const provider = findProvider("orm", "drizzle");
     if (provider) {

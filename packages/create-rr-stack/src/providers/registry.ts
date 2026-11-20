@@ -1,8 +1,10 @@
 import type { Provider } from "../resolver/types.js";
 import { betterAuthProvider } from "./auth/better-auth.js";
 import { clerkProvider } from "./auth/clerk.js";
+import { convexAuthProvider } from "./auth/convex-auth.js";
 import { firebaseAuthProvider } from "./auth/firebase-auth.js";
 import { supabaseAuthProvider } from "./auth/supabase-auth.js";
+import { convexDatabaseProvider } from "./database/convex.js";
 import { mongodbDockerProvider } from "./database/mongodb-docker.js";
 import { mongodbHostedProvider } from "./database/mongodb-hosted.js";
 import { postgresDockerProvider } from "./database/postgres-docker.js";
@@ -12,6 +14,7 @@ import { sqliteProvider } from "./database/sqlite.js";
 import { drizzleProvider } from "./orm/drizzle.js";
 import { mongooseProvider } from "./orm/mongoose.js";
 import { prismaProvider } from "./orm/prisma.js";
+import { convexRealtimeProvider } from "./realtime/convex.js";
 
 /**
  * All provider manifests a `Selections` field can name directly (looked up
@@ -33,6 +36,7 @@ export const allProviders: readonly Provider[] = [
   sqliteProvider,
   mongodbDockerProvider,
   mongodbHostedProvider,
+  convexDatabaseProvider,
   drizzleProvider,
   mongooseProvider,
   prismaProvider,
@@ -40,6 +44,8 @@ export const allProviders: readonly Provider[] = [
   clerkProvider,
   supabaseAuthProvider,
   firebaseAuthProvider,
+  convexAuthProvider,
+  convexRealtimeProvider,
 ];
 
 export function findProvider(layer: Provider["layer"], id: string): Provider | undefined {

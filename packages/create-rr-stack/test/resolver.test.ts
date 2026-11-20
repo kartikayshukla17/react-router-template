@@ -498,6 +498,56 @@ describe("resolve", () => {
     });
   });
 
+  describe("Convex bundle (ticket 012)", () => {
+    it("resolves database: convex alone to all three Convex providers, with no ORM and no glue", () => {
+      const result = resolve({ database: "convex" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["convex", "convex", "convex-auth"].sort(),
+      );
+      expect(plan.providers.map((p) => p.layer).sort()).toEqual(
+        ["auth", "database", "realtime"].sort(),
+      );
+      expect(plan.glue).toEqual([]);
+    });
+
+    it("pre-fills auth and realtime as convex when only database: convex is given explicitly", () => {
+      const result = resolve({ database: "convex" }) as Plan;
+      expect(result.providers.find((p) => p.layer === "auth")?.id).toBe("convex-auth");
+      expect(result.providers.find((p) => p.layer === "realtime")?.id).toBe("convex");
+    });
+
+    it("rejects database: convex with a non-Convex auth provider, naming the conflict", () => {
+      const result = resolve({ database: "convex", auth: "clerk" });
+
+      expect(isErrors(result)).toBe(true);
+      const errors = (result as { errors: Array<{ message: string }> }).errors;
+      expect(errors.some((e) => /convex/i.test(e.message) && /auth/i.test(e.message))).toBe(true);
+    });
+
+    it("rejects database: convex with a non-Convex realtime provider, naming the conflict", () => {
+      const result = resolve({ database: "convex", realtime: "supabase-realtime" });
+      expect(isErrors(result)).toBe(true);
+    });
+
+    it("rejects database: convex with any ORM selected, naming the conflict", () => {
+      const result = resolve({ database: "convex", orm: "drizzle" });
+      expect(isErrors(result)).toBe(true);
+    });
+
+    it("accepts database: convex with auth/realtime explicitly set to their Convex values too", () => {
+      const result = resolve({ database: "convex", auth: "convex-auth", realtime: "convex" });
+      expect(isErrors(result)).toBe(false);
+    });
+
+    it("gates convex-auth and convex realtime behind database: convex via their own requires", () => {
+      expect(isErrors(resolve({ auth: "convex-auth" }))).toBe(true);
+      expect(isErrors(resolve({ realtime: "convex" }))).toBe(true);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
@@ -649,18 +699,32 @@ describe("resolve", () => {
 });
 
 describe("options", () => {
-  it("lists postgres, sqlite and mongodb as database options", () => {
+  it("lists postgres, sqlite, mongodb and convex as database options", () => {
     const result = options("database", {});
     expect(result).toEqual([
       { value: "postgres", label: "PostgreSQL" },
       { value: "sqlite", label: "SQLite (local file)" },
       { value: "mongodb", label: "MongoDB" },
+      { value: "convex", label: "Convex (database + auth + realtime bundle)" },
     ]);
   });
 
-  it("returns an empty list for layers with no registered providers yet", () => {
+  it("returns an empty list for a layer with no registered providers yet", () => {
     expect(options("storage", {})).toEqual([]);
-    expect(options("realtime", {})).toEqual([]);
+  });
+
+  it("lists convex as a realtime option, disabled until database is convex (ticket 012)", () => {
+    expect(options("realtime", {})).toEqual([
+      {
+        value: "convex",
+        label: "Convex Realtime",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
+    ]);
+    expect(options("realtime", { database: "convex" })).toEqual([
+      { value: "convex", label: "Convex Realtime" },
+    ]);
   });
 
   it("lists drizzle and prisma as orm options, disabled with a reason until database is postgres", () => {
@@ -705,12 +769,20 @@ describe("options", () => {
     expect(withNothingSelected.find((o) => o.value === "clerk")?.disabled).toBeUndefined();
     expect(withNothingSelected.find((o) => o.value === "supabase-auth")?.disabled).toBeUndefined();
     expect(withNothingSelected.find((o) => o.value === "firebase-auth")?.disabled).toBeUndefined();
+    // convex-auth (012) requires database: convex, so it IS disabled here.
+    expect(withNothingSelected.find((o) => o.value === "convex-auth")?.disabled).toBe(true);
 
     expect(options("auth", { database: "postgres", orm: "drizzle" })).toEqual([
       { value: "better-auth", label: "Better Auth" },
       { value: "clerk", label: "Clerk" },
       { value: "supabase-auth", label: "Supabase Auth" },
       { value: "firebase-auth", label: "Firebase Auth" },
+      {
+        value: "convex-auth",
+        label: "Convex Auth",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
     ]);
   });
 
@@ -752,6 +824,12 @@ describe("options", () => {
       { value: "clerk", label: "Clerk" },
       { value: "supabase-auth", label: "Supabase Auth" },
       { value: "firebase-auth", label: "Firebase Auth" },
+      {
+        value: "convex-auth",
+        label: "Convex Auth",
+        disabled: true,
+        reason: expect.stringContaining("database"),
+      },
     ]);
   });
 
@@ -846,6 +924,12 @@ describe("options", () => {
         { value: "clerk", label: "Clerk" },
         { value: "supabase-auth", label: "Supabase Auth" },
         { value: "firebase-auth", label: "Firebase Auth" },
+        {
+          value: "convex-auth",
+          label: "Convex Auth",
+          disabled: true,
+          reason: expect.stringContaining("database"),
+        },
       ]);
     });
 

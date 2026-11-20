@@ -328,3 +328,71 @@ describe("Firebase Auth vs. Better Auth auth.ts contract (ticket 011)", () => {
     }
   });
 });
+
+describe("Convex bundle scaffolds without collisions (ticket 012)", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  it("scaffolds database: convex alone to all three Convex fragments, plus the base app", async () => {
+    const targetDir = await generateProject({ database: "convex" }, "rr-stack-convex-");
+    tempDirs.push(targetDir);
+
+    const pkg = JSON.parse(await readFile(path.join(targetDir, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    };
+    expect(pkg.dependencies.convex).toBeDefined();
+    expect(pkg.dependencies.drizzle).toBeUndefined();
+
+    await expect(readFile(path.join(targetDir, "convex", "schema.ts"), "utf8")).resolves.toContain(
+      "notes",
+    );
+    await expect(readFile(path.join(targetDir, "convex", "auth.ts"), "utf8")).resolves.toContain(
+      "createSession",
+    );
+    await expect(readFile(path.join(targetDir, "convex", "notes.ts"), "utf8")).resolves.toContain(
+      "query",
+    );
+    await expect(readFile(path.join(targetDir, "convex", "events.ts"), "utf8")).resolves.toContain(
+      "publish",
+    );
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "auth.ts"), "utf8"),
+    ).resolves.toContain("requireUser");
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "db.ts"), "utf8"),
+    ).resolves.toContain("listNotes");
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "realtime.ts"), "utf8"),
+    ).resolves.toContain("subscribe");
+  });
+});
+
+describe("Convex Auth vs. Better Auth auth.ts contract (ticket 012)", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  it("exports the identical getSession/requireUser/signOut surface for Convex as for Better Auth + Drizzle + Postgres", async () => {
+    const betterAuthTs = await generateAuthTs(
+      { database: "postgres", postgresHost: "docker", orm: "drizzle", auth: "better-auth" },
+      "rr-stack-better-auth-4-",
+    );
+    const convexAuthTs = await generateAuthTs({ database: "convex" }, "rr-stack-convex-auth-");
+
+    const betterAuthSignatures = extractExportedFunctionSignatures(betterAuthTs);
+    const convexAuthSignatures = extractExportedFunctionSignatures(convexAuthTs);
+
+    for (const name of PUBLIC_INTERFACE_NAMES) {
+      const betterAuthFn = betterAuthSignatures.find((s) => s.name === name);
+      const convexAuthFn = convexAuthSignatures.find((s) => s.name === name);
+      expect(betterAuthFn, `Better Auth auth.ts should export ${name}`).toBeDefined();
+      expect(convexAuthFn, `Convex Auth auth.ts should export ${name}`).toBeDefined();
+      expect(convexAuthFn?.paramCount).toBe(betterAuthFn?.paramCount);
+    }
+  });
+});
