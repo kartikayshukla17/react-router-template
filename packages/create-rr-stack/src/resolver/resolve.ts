@@ -133,6 +133,20 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.storage === "supabase-storage") {
+    const provider = findProvider("storage", "supabase-storage");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
+  if (selections.storage === "firebase-storage") {
+    const provider = findProvider("storage", "firebase-storage");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
 }
 

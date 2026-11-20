@@ -24,7 +24,16 @@ const projectId = process.env.VITE_FIREBASE_PROJECT_ID ?? "";
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL ?? "";
 const privateKey = (process.env.FIREBASE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
 
-const adminApp =
+/**
+ * Exported (not just used internally) so a sibling fragment that also
+ * needs the Admin SDK — `storage/firebase-storage` (ticket 014) — builds
+ * on the same initialized app instead of re-reading these env vars and
+ * calling `initializeApp` a second time. `getApps()[0] ??` already guards
+ * against Firebase's own "app already exists" throw either way; exporting
+ * this just avoids the redundant re-init work and a second place these
+ * four env vars get parsed.
+ */
+export const adminApp =
   getApps()[0] ?? initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
 
 const adminAuth = getAuth(adminApp);

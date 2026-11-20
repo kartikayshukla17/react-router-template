@@ -29,6 +29,8 @@ const AUTH_OPTIONS: Option[] = [
 const REALTIME_OPTIONS: Option[] = [{ value: "convex", label: "Convex Realtime" }];
 const STORAGE_OPTIONS: Option[] = [
   { value: "s3-presigned", label: "S3 / Cloudflare R2 (presigned upload)" },
+  { value: "supabase-storage", label: "Supabase Storage" },
+  { value: "firebase-storage", label: "Firebase Storage" },
 ];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {

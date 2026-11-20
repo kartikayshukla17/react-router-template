@@ -589,6 +589,73 @@ describe("resolve", () => {
     });
   });
 
+  describe("Storage: Supabase Storage and Firebase Storage (ticket 014)", () => {
+    it("resolves Supabase Storage + Clerk auth + Neon database (storage independent of auth/database)", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "neon",
+        orm: "drizzle",
+        auth: "clerk",
+        storage: "supabase-storage",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["clerk", "drizzle", "postgres-neon", "supabase-client", "supabase-storage"].sort(),
+      );
+    });
+
+    it("resolves Firebase Storage + Better Auth + Docker Postgres", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "docker",
+        orm: "drizzle",
+        auth: "better-auth",
+        storage: "firebase-storage",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "drizzle", "firebase-client", "firebase-storage", "postgres-docker"].sort(),
+      );
+    });
+
+    it("shares exactly one supabase-client fragment between Supabase Auth and Supabase Storage, not two", () => {
+      const result = resolve({ auth: "supabase-auth", storage: "supabase-storage" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["supabase-auth", "supabase-client", "supabase-storage"].sort(),
+      );
+    });
+
+    it("shares exactly one firebase-client fragment between Firebase Auth and Firebase Storage, not two", () => {
+      const result = resolve({ auth: "firebase-auth", storage: "firebase-storage" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "firebase-client")).toHaveLength(1);
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["firebase-auth", "firebase-client", "firebase-storage"].sort(),
+      );
+    });
+
+    it("has no requires/conflicts for either provider, so neither rejects a combination on its own account", () => {
+      const supabaseStorage = (resolve({ storage: "supabase-storage" }) as Plan).providers.find(
+        (p) => p.id === "supabase-storage",
+      );
+      const firebaseStorage = (resolve({ storage: "firebase-storage" }) as Plan).providers.find(
+        (p) => p.id === "firebase-storage",
+      );
+      expect(supabaseStorage?.requires ?? []).toEqual([]);
+      expect(firebaseStorage?.requires ?? []).toEqual([]);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {

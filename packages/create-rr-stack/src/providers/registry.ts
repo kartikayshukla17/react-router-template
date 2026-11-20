@@ -15,7 +15,9 @@ import { drizzleProvider } from "./orm/drizzle.js";
 import { mongooseProvider } from "./orm/mongoose.js";
 import { prismaProvider } from "./orm/prisma.js";
 import { convexRealtimeProvider } from "./realtime/convex.js";
+import { firebaseStorageProvider } from "./storage/firebase-storage.js";
 import { s3PresignedProvider } from "./storage/s3-presigned.js";
+import { supabaseStorageProvider } from "./storage/supabase-storage.js";
 
 /**
  * All provider manifests a `Selections` field can name directly (looked up
@@ -48,6 +50,8 @@ export const allProviders: readonly Provider[] = [
   convexAuthProvider,
   convexRealtimeProvider,
   s3PresignedProvider,
+  supabaseStorageProvider,
+  firebaseStorageProvider,
 ];
 
 export function findProvider(layer: Provider["layer"], id: string): Provider | undefined {
