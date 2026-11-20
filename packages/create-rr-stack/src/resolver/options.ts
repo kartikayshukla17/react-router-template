@@ -18,7 +18,10 @@ const ORM_OPTIONS: Option[] = [
   { value: "prisma", label: "Prisma" },
   { value: "mongoose", label: "Mongoose" },
 ];
-const AUTH_OPTIONS: Option[] = [{ value: "better-auth", label: "Better Auth" }];
+const AUTH_OPTIONS: Option[] = [
+  { value: "better-auth", label: "Better Auth" },
+  { value: "clerk", label: "Clerk" },
+];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {
   database: DATABASE_OPTIONS,

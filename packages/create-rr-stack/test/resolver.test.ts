@@ -341,6 +341,56 @@ describe("resolve", () => {
     expect(isErrors(result)).toBe(true);
   });
 
+  describe("Clerk (ticket 009)", () => {
+    it("resolves clerk alone, with no database or ORM, to exactly the clerk provider and no glue", () => {
+      const result = resolve({ auth: "clerk" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id)).toEqual(["clerk"]);
+      expect(plan.glue).toEqual([]);
+    });
+
+    it("resolves clerk alongside Postgres + Drizzle with no auth-ORM glue fragment added", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "docker",
+        orm: "drizzle",
+        auth: "clerk",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["clerk", "drizzle", "postgres-docker"].sort(),
+      );
+      // Only the ORM+host driver glue is present — nothing pairs clerk with drizzle.
+      expect(plan.glue.map((g) => g.between).sort()).toEqual([["drizzle", "postgres-docker"]]);
+    });
+
+    it("resolves clerk alongside MongoDB + Mongoose with no auth-ORM glue fragment added", () => {
+      const result = resolve({
+        database: "mongodb",
+        mongoHost: "docker",
+        orm: "mongoose",
+        auth: "clerk",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["clerk", "mongodb-docker", "mongoose"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual([["mongoose", "mongodb"]]);
+    });
+
+    it("has no requires/conflicts, so it never rejects a combination on its own account", () => {
+      const clerkProvider = (resolve({ auth: "clerk" }) as Plan).providers[0];
+      expect(clerkProvider?.requires ?? []).toEqual([]);
+      expect(clerkProvider?.conflicts ?? []).toEqual([]);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
@@ -540,12 +590,15 @@ describe("options", () => {
   });
 
   it("lists better-auth as an auth option, disabled until orm is drizzle and database is postgres", () => {
-    const disabled = options("auth", {});
-    expect(disabled).toHaveLength(1);
-    expect(disabled[0]?.disabled).toBe(true);
+    const withNothingSelected = options("auth", {});
+    const betterAuthOption = withNothingSelected.find((o) => o.value === "better-auth");
+    expect(betterAuthOption?.disabled).toBe(true);
+    // clerk (ticket 009) has no requires, so it's never disabled by this check.
+    expect(withNothingSelected.find((o) => o.value === "clerk")?.disabled).toBeUndefined();
 
     expect(options("auth", { database: "postgres", orm: "drizzle" })).toEqual([
       { value: "better-auth", label: "Better Auth" },
+      { value: "clerk", label: "Clerk" },
     ]);
   });
 
@@ -584,6 +637,7 @@ describe("options", () => {
   it("offers better-auth once database is sqlite and orm is drizzle", () => {
     expect(options("auth", { database: "sqlite", orm: "drizzle" })).toEqual([
       { value: "better-auth", label: "Better Auth" },
+      { value: "clerk", label: "Clerk" },
     ]);
   });
 
@@ -675,6 +729,7 @@ describe("options", () => {
     it("offers better-auth once database is postgres and orm is prisma", () => {
       expect(options("auth", { database: "postgres", orm: "prisma" })).toEqual([
         { value: "better-auth", label: "Better Auth" },
+        { value: "clerk", label: "Clerk" },
       ]);
     });
 

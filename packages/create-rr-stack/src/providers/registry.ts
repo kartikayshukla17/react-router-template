@@ -1,5 +1,6 @@
 import type { Provider } from "../resolver/types.js";
 import { betterAuthProvider } from "./auth/better-auth.js";
+import { clerkProvider } from "./auth/clerk.js";
 import { mongodbDockerProvider } from "./database/mongodb-docker.js";
 import { mongodbHostedProvider } from "./database/mongodb-hosted.js";
 import { postgresDockerProvider } from "./database/postgres-docker.js";
@@ -34,6 +35,7 @@ export const allProviders: readonly Provider[] = [
   mongooseProvider,
   prismaProvider,
   betterAuthProvider,
+  clerkProvider,
 ];
 
 export function findProvider(layer: Provider["layer"], id: string): Provider | undefined {

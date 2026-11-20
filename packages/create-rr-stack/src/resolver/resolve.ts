@@ -85,6 +85,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.auth === "clerk") {
+    const provider = findProvider("auth", "clerk");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
 }
 
