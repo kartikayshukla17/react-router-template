@@ -2,12 +2,28 @@ import * as p from "@clack/prompts";
 import type { Plan } from "../resolver/types.js";
 
 /**
- * Formats and prints the per-provider "next steps" checklist (PRD.md §9,
- * US7): every required env var, what it is, and where to find it, plus
- * each provider's own setup step (e.g. "run `npm run db:push`").
+ * Builds the per-provider "next steps" checklist (PRD.md §9, US7): every
+ * required env var, what it is, and where to find it, plus each
+ * provider's own setup step (e.g. "run `npm run db:push`"). Pure — split
+ * out from `printNextSteps` (ticket 016) so the non-interactive path can
+ * print the exact same content as plain text instead of a clack box.
+ *
+ * `installed`/`gitInitialized` describe what `run.ts` already did before
+ * calling this, so the printed checklist never tells the user to redo a
+ * step (`npm install`, `git init`) this run already took care of.
  */
-export function printNextSteps(plan: Plan, projectName: string): void {
-  const lines: string[] = [`cd ${projectName}`, "npm install"];
+export function formatNextSteps(
+  plan: Plan,
+  projectName: string,
+  options: { installed: boolean; gitInitialized: boolean },
+): string {
+  const lines: string[] = [`cd ${projectName}`];
+  if (!options.installed) {
+    lines.push("npm install");
+  }
+  if (!options.gitInitialized) {
+    lines.push("git init");
+  }
 
   // Whether there's "nothing to configure" is a property of the whole
   // resolved plan's env requirements (every selected provider across every
@@ -36,5 +52,13 @@ export function printNextSteps(plan: Plan, projectName: string): void {
 
   lines.push("", "npm run dev");
 
-  p.note(lines.join("\n"), "Next steps");
+  return lines.join("\n");
+}
+
+export function printNextSteps(
+  plan: Plan,
+  projectName: string,
+  options: { installed: boolean; gitInitialized: boolean },
+): void {
+  p.note(formatNextSteps(plan, projectName, options), "Next steps");
 }

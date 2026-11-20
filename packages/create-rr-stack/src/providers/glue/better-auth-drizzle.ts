@@ -25,16 +25,18 @@ import type { Glue } from "../../resolver/types.js";
 export const betterAuthDrizzleGlue: Glue = {
   between: ["drizzle", "better-auth"],
   files: "glue/better-auth+drizzle",
-  fileManifest: [
-    "app/server/auth.ts",
+  fileManifest: ["app/server/auth.ts"],
+  // `app/routes.ts` itself is a structured-merge target (ticket 013's
+  // `scaffolder/merge/routes.ts`), not a file this fragment ships.
+  // Demo routes (ticket 016's `--no-example`) are split out below: core
+  // auth wiring ships either way, the demo UI only when included.
+  demoFileManifest: [
     "app/routes/home.tsx",
     "app/routes/sign-in.tsx",
     "app/routes/dashboard.tsx",
     "app/routes/notes.tsx",
   ],
-  // `app/routes.ts` itself is a structured-merge target (ticket 013's
-  // `scaffolder/merge/routes.ts`), not a file this fragment ships.
-  routes: [
+  demoRoutes: [
     { index: true, file: "routes/home.tsx" },
     { path: "sign-in", file: "routes/sign-in.tsx" },
     { path: "dashboard", file: "routes/dashboard.tsx" },

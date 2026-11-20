@@ -36,19 +36,21 @@ export const clerkProvider = defineProvider({
     },
   ],
   files: "providers/auth/clerk",
-  fileManifest: [
-    "app/root.tsx",
+  fileManifest: ["app/root.tsx", "app/server/auth.ts"],
+  // `app/routes.ts` itself is a structured-merge target (ticket 013's
+  // `scaffolder/merge/routes.ts`), not a file this provider ships.
+  // Demo routes (ticket 016's `--no-example`) are split out below: core
+  // auth wiring (plus `root.tsx`'s `<ClerkProvider>`, needed for any
+  // Clerk component, demo or not) ships either way. The `sign-in/*`
+  // splat matches Clerk's own documented shape for a custom sign-in
+  // page — see `app/routes/sign-in.tsx`'s doc comment.
+  demoFileManifest: [
     "app/routes/home.tsx",
     "app/routes/sign-in.tsx",
     "app/routes/dashboard.tsx",
     "app/routes/notes.tsx",
-    "app/server/auth.ts",
   ],
-  // `app/routes.ts` itself is a structured-merge target (ticket 013's
-  // `scaffolder/merge/routes.ts`), not a file this provider ships. The
-  // `sign-in/*` splat matches Clerk's own documented shape for a custom
-  // sign-in page — see `app/routes/sign-in.tsx`'s doc comment.
-  routes: [
+  demoRoutes: [
     { index: true, file: "routes/home.tsx" },
     { path: "sign-in/*", file: "routes/sign-in.tsx" },
     { path: "dashboard", file: "routes/dashboard.tsx" },

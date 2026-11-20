@@ -20,6 +20,23 @@ describe("resolve", () => {
     expect(plan.installOrder).toEqual([]);
     expect(plan.env).toEqual([]);
     expect(plan.nextSteps).toEqual([]);
+    expect(plan.includeDemo).toBe(true);
+  });
+
+  describe("includeDemo (ticket 016's --no-example)", () => {
+    it("defaults to true when extras is absent", () => {
+      expect((resolve({}) as Plan).includeDemo).toBe(true);
+    });
+
+    it("is true when extras.example is true", () => {
+      const result = resolve({ extras: { shadcn: false, docker: false, example: true } });
+      expect((result as Plan).includeDemo).toBe(true);
+    });
+
+    it("is false when extras.example is false", () => {
+      const result = resolve({ extras: { shadcn: false, docker: false, example: false } });
+      expect((result as Plan).includeDemo).toBe(false);
+    });
   });
 
   it("resolves postgres+docker to exactly the postgres-docker provider", () => {
@@ -574,9 +591,9 @@ describe("resolve", () => {
       );
     });
 
-    it("declares a /files route, distinct from every auth provider's own routes", () => {
+    it("declares a /files route (demo UI, ticket 016's --no-example), distinct from every auth provider's own routes", () => {
       const provider = (resolve({ storage: "s3-presigned" }) as Plan).providers[0];
-      expect(provider?.routes).toEqual([
+      expect(provider?.demoRoutes).toEqual([
         { path: "files", file: "routes/files.tsx" },
         { path: "upload-url", file: "routes/upload-url.tsx" },
       ]);

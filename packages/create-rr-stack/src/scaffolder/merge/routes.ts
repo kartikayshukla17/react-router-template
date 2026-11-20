@@ -11,12 +11,26 @@ import type { Glue, Provider, RouteEntry } from "../../resolver/types.js";
  * project has always supported, now produced by this merger instead of a
  * static file the base template shipped, so the base template's own
  * `app/home.tsx`-pointing default stays reachable without every other
- * fragment having to know about it.
+ * fragment having to know about it. That fallback is also what makes
+ * `includeDemo: false` (ticket 016's `--no-example`) work for free: with
+ * `demoRoutes` excluded, an auth provider that declared *only* demo
+ * routes contributes nothing here, `hasIndex` comes back false, and the
+ * base template's own landing page becomes the index again.
  */
-export function mergeRoutes(providers: readonly Provider[], glue: readonly Glue[]): string {
+export function mergeRoutes(
+  providers: readonly Provider[],
+  glue: readonly Glue[],
+  includeDemo = true,
+): string {
   const declared: RouteEntry[] = [
-    ...providers.flatMap((provider) => provider.routes ?? []),
-    ...glue.flatMap((fragment) => fragment.routes ?? []),
+    ...providers.flatMap((provider) => [
+      ...(provider.routes ?? []),
+      ...(includeDemo ? (provider.demoRoutes ?? []) : []),
+    ]),
+    ...glue.flatMap((fragment) => [
+      ...(fragment.routes ?? []),
+      ...(includeDemo ? (fragment.demoRoutes ?? []) : []),
+    ]),
   ];
 
   const hasIndex = declared.some((entry) => "index" in entry);

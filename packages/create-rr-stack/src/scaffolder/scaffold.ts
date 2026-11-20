@@ -25,19 +25,28 @@ interface Fragment {
   fileManifest: readonly string[];
 }
 
+/**
+ * `fileManifest` folded together with `demoFileManifest` when
+ * `includeDemo` is true (ticket 016's `--no-example`) — once folded,
+ * nothing downstream (collision detection, the write loop) needs to know
+ * demo files are a distinct category at all.
+ */
 function fragmentsOf(plan: Plan): Fragment[] {
-  return [
-    ...plan.providers.map((provider) => ({
-      id: provider.id,
-      files: provider.files,
-      fileManifest: provider.fileManifest,
-    })),
-    ...plan.glue.map((glue) => ({
-      id: `${glue.between[0]}+${glue.between[1]}`,
-      files: glue.files,
-      fileManifest: glue.fileManifest,
-    })),
-  ];
+  const providers = plan.providers.map((provider) => ({
+    id: provider.id,
+    files: provider.files,
+    fileManifest: plan.includeDemo
+      ? [...provider.fileManifest, ...(provider.demoFileManifest ?? [])]
+      : provider.fileManifest,
+  }));
+  const glue = plan.glue.map((fragment) => ({
+    id: `${fragment.between[0]}+${fragment.between[1]}`,
+    files: fragment.files,
+    fileManifest: plan.includeDemo
+      ? [...fragment.fileManifest, ...(fragment.demoFileManifest ?? [])]
+      : fragment.fileManifest,
+  }));
+  return [...providers, ...glue];
 }
 
 export async function scaffold(
@@ -90,7 +99,7 @@ export async function scaffold(
   writtenPaths.push(envExamplePath);
 
   const routesPath = joinPath(targetDir, "app", "routes.ts");
-  await fs.writeFile(routesPath, mergeRoutes(plan.providers, plan.glue));
+  await fs.writeFile(routesPath, mergeRoutes(plan.providers, plan.glue, plan.includeDemo));
   writtenPaths.push(routesPath);
 
   return { ok: true, writtenPaths };

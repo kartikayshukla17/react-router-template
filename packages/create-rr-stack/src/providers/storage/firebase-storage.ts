@@ -32,10 +32,13 @@ export const firebaseStorageProvider = defineProvider({
     },
   ],
   files: "providers/storage/firebase-storage",
-  fileManifest: ["app/server/storage.ts", "app/routes/files.tsx", "app/routes/upload-url.tsx"],
+  fileManifest: ["app/server/storage.ts"],
   // `app/routes.ts` itself is a structured-merge target (ticket 013's
   // `scaffolder/merge/routes.ts`), not a file this provider ships.
-  routes: [
+  // Demo routes (ticket 016's `--no-example`) are split out below: core
+  // storage wiring ships either way, the /files demo UI only when included.
+  demoFileManifest: ["app/routes/files.tsx", "app/routes/upload-url.tsx"],
+  demoRoutes: [
     { path: "files", file: "routes/files.tsx" },
     { path: "upload-url", file: "routes/upload-url.tsx" },
   ],

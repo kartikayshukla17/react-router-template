@@ -22,13 +22,14 @@ const postgresDockerFixture: Provider = {
   nextSteps: ["Run `docker compose up -d`."],
 };
 
-function planWith(providers: Provider[], glue: Glue[] = []): Plan {
+function planWith(providers: Provider[], glue: Glue[] = [], includeDemo = true): Plan {
   return {
     providers,
     glue,
     installOrder: providers.map((p) => p.id),
     env: providers.flatMap((p) => p.env),
     nextSteps: providers.flatMap((p) => p.nextSteps),
+    includeDemo,
   };
 }
 

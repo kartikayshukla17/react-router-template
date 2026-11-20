@@ -103,6 +103,18 @@ export interface Provider {
    * file needs a merger for, not fragment-owned static files.
    */
   routes?: readonly RouteEntry[];
+  /**
+   * The subset of `fileManifest` that's demo-only UI (ticket 016's
+   * `--no-example`), written only when `Plan.includeDemo` is true — never
+   * overlapping `fileManifest` itself, so the scaffolder doesn't need to
+   * subtract one list from the other. Core wiring (e.g. `app/server/
+   * auth.ts`) stays in `fileManifest` and ships either way: a user who
+   * strips the demo still gets a working `getSession`/`requireUser`/
+   * `signOut` to build their own routes against.
+   */
+  demoFileManifest?: readonly string[];
+  /** Same rationale and mechanism as `demoFileManifest`, for `routes`. */
+  demoRoutes?: readonly RouteEntry[];
 }
 
 export interface Glue {
@@ -125,6 +137,10 @@ export interface Glue {
   fileManifest: readonly string[];
   /** Same rationale and mechanism as `Provider.routes` (ticket 013). */
   routes?: readonly RouteEntry[];
+  /** Same rationale and mechanism as `Provider.demoFileManifest` (ticket 016). */
+  demoFileManifest?: readonly string[];
+  /** Same rationale and mechanism as `Provider.demoRoutes` (ticket 016). */
+  demoRoutes?: readonly RouteEntry[];
 }
 
 /**
@@ -163,6 +179,13 @@ export interface Plan {
   installOrder: string[];
   env: EnvVar[];
   nextSteps: string[];
+  /**
+   * `selections.extras?.example !== false` (ticket 016's `--no-example`
+   * default: demo included unless explicitly stripped). The scaffolder
+   * reads this to decide whether to also write each fragment's
+   * `demoFileManifest`/`demoRoutes`.
+   */
+  includeDemo: boolean;
 }
 
 export interface ResolverError {

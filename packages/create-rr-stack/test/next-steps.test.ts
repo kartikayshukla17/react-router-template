@@ -5,7 +5,7 @@ vi.mock("@clack/prompts", () => ({
   note: (...args: unknown[]) => noteSpy(...args),
 }));
 
-import { printNextSteps } from "../src/cli/next-steps.js";
+import { formatNextSteps, printNextSteps } from "../src/cli/next-steps.js";
 import { resolve } from "../src/resolver/resolve.js";
 import { isErrors, type Plan } from "../src/resolver/types.js";
 
@@ -26,7 +26,7 @@ describe("printNextSteps", () => {
     const plan = result as Plan;
     expect(plan.env).toEqual([]);
 
-    printNextSteps(plan, "my-app");
+    printNextSteps(plan, "my-app", { installed: false, gitInitialized: false });
 
     expect(noteSpy).toHaveBeenCalledTimes(1);
     const printed = noteSpy.mock.calls[0]?.[0] as string;
@@ -43,7 +43,7 @@ describe("printNextSteps", () => {
     expect(plan.env.length).toBeGreaterThan(0);
     expect(plan.env.map((e) => e.name)).toContain("BETTER_AUTH_SECRET");
 
-    printNextSteps(plan, "my-app");
+    printNextSteps(plan, "my-app", { installed: false, gitInitialized: false });
 
     expect(noteSpy).toHaveBeenCalledTimes(1);
     const printed = noteSpy.mock.calls[0]?.[0] as string;
@@ -64,7 +64,7 @@ describe("printNextSteps", () => {
     const plan = result as Plan;
     expect(plan.env.length).toBeGreaterThan(0);
 
-    printNextSteps(plan, "my-app");
+    printNextSteps(plan, "my-app", { installed: false, gitInitialized: false });
 
     expect(noteSpy).toHaveBeenCalledTimes(1);
     const printed = noteSpy.mock.calls[0]?.[0] as string;
@@ -73,5 +73,24 @@ describe("printNextSteps", () => {
     expect(printed).toContain("BETTER_AUTH_SECRET");
     expect(printed).toContain("Run `docker compose up -d`");
     expect(printed).not.toContain("Nothing to configure — just run `npm run dev`.");
+  });
+});
+
+describe("formatNextSteps (ticket 016)", () => {
+  it("tells the user to run npm install and git init when run.ts didn't already do either", () => {
+    const result = resolve({ database: "sqlite", orm: "drizzle" });
+    const plan = result as Plan;
+    const formatted = formatNextSteps(plan, "my-app", { installed: false, gitInitialized: false });
+    expect(formatted).toContain("npm install");
+    expect(formatted).toContain("git init");
+  });
+
+  it("omits npm install and git init once run.ts already ran them", () => {
+    const result = resolve({ database: "sqlite", orm: "drizzle" });
+    const plan = result as Plan;
+    const formatted = formatNextSteps(plan, "my-app", { installed: true, gitInitialized: true });
+    expect(formatted).not.toContain("npm install");
+    expect(formatted).not.toContain("git init");
+    expect(formatted).toContain("cd my-app");
   });
 });

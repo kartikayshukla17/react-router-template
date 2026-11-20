@@ -339,6 +339,7 @@ export function resolve(selections: Selections): ResolveResult {
     installOrder: providers.map((provider) => provider.id),
     env: providers.flatMap((provider) => provider.env),
     nextSteps: providers.flatMap((provider) => provider.nextSteps),
+    includeDemo: selections.extras?.example !== false,
   };
 
   return plan;
