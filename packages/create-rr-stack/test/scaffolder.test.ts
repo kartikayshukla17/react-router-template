@@ -47,7 +47,8 @@ describe("scaffold", () => {
     expect(result.writtenPaths).toContain("/out/docker-compose.yml");
     expect(result.writtenPaths).toContain("/out/package.json");
     expect(result.writtenPaths).toContain("/out/.env.example");
-    expect(result.writtenPaths).toHaveLength(3);
+    expect(result.writtenPaths).toContain("/out/app/routes.ts");
+    expect(result.writtenPaths).toHaveLength(4);
 
     await expect(fs.readFile("/out/docker-compose.yml")).resolves.toContain("postgres:17");
 
@@ -67,7 +68,11 @@ describe("scaffold", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.writtenPaths).toEqual(["/out/package.json", "/out/.env.example"]);
+    expect(result.writtenPaths).toEqual([
+      "/out/package.json",
+      "/out/.env.example",
+      "/out/app/routes.ts",
+    ]);
   });
 
   it("merges into an existing package.json instead of clobbering it", async () => {
@@ -155,6 +160,46 @@ describe("scaffold", () => {
     expect(result.error.path).toBe("/out/.env.example");
     expect(result.error.message).toContain(".env.example");
     expect(result.error.message).toContain("clobbering-fragment");
+  });
+
+  it("fails with a named PATH_COLLISION error when a fragment claims a merge-target path (app/routes.ts)", async () => {
+    const clobberingFragment: Provider = {
+      ...postgresDockerFixture,
+      id: "clobbering-fragment",
+      fileManifest: ["app/routes.ts"],
+    };
+    const fs = new MemoryFileSystem({
+      "providers/database/postgres-docker/app/routes.ts": "",
+    });
+
+    const result = await scaffold(planWith([clobberingFragment]), "/out", fs);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("PATH_COLLISION");
+    expect(result.error.path).toBe("/out/app/routes.ts");
+    expect(result.error.message).toContain("app/routes.ts");
+    expect(result.error.message).toContain("clobbering-fragment");
+  });
+
+  it("merges a provider's declared routes into app/routes.ts, falling back to the home index route otherwise", async () => {
+    const fs = new MemoryFileSystem();
+
+    const emptyPlanResult = await scaffold(planWith([]), "/out", fs);
+    expect(emptyPlanResult.ok).toBe(true);
+    await expect(fs.readFile("/out/app/routes.ts")).resolves.toContain('index("routes/home.tsx")');
+
+    const providerWithRoutes: Provider = {
+      ...postgresDockerFixture,
+      fileManifest: [],
+      routes: [{ path: "files", file: "routes/files.tsx" }],
+    };
+    const result = await scaffold(planWith([providerWithRoutes]), "/out2", fs);
+    expect(result.ok).toBe(true);
+    const routesTs = await fs.readFile("/out2/app/routes.ts");
+    expect(routesTs).toContain('route("files", "routes/files.tsx")');
+    // No provider declared an index route here, so the fallback still applies.
+    expect(routesTs).toContain('index("routes/home.tsx")');
   });
 
   it("writes a glue fragment's files and merges its deps into package.json", async () => {

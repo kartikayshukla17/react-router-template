@@ -27,12 +27,15 @@ const AUTH_OPTIONS: Option[] = [
   { value: "convex-auth", label: "Convex Auth" },
 ];
 const REALTIME_OPTIONS: Option[] = [{ value: "convex", label: "Convex Realtime" }];
+const STORAGE_OPTIONS: Option[] = [
+  { value: "s3-presigned", label: "S3 / Cloudflare R2 (presigned upload)" },
+];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {
   database: DATABASE_OPTIONS,
   orm: ORM_OPTIONS,
   auth: AUTH_OPTIONS,
-  storage: [],
+  storage: STORAGE_OPTIONS,
   realtime: REALTIME_OPTIONS,
 };
 

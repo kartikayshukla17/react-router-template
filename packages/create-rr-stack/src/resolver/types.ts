@@ -51,6 +51,13 @@ export interface Constraint {
   oneOf: string[];
 }
 
+/**
+ * One entry a fragment contributes to the generated `app/routes.ts`
+ * (ticket 013). Mirrors the two `@react-router/dev/routes` helpers that
+ * matter here: `index(file)` (no `path`) and `route(path, file)`.
+ */
+export type RouteEntry = { file: string } & ({ index: true } | { path: string });
+
 export interface Provider {
   layer: ProviderLayer;
   id: string;
@@ -84,6 +91,18 @@ export interface Provider {
    * is the first one that does (`db:push`, `db:studio`).
    */
   scripts?: Record<string, string>;
+  /**
+   * Routes this fragment contributes to the generated `app/routes.ts`
+   * (ticket 013), merged with every other provider's/glue fragment's by
+   * `scaffolder/merge/routes.ts` — the same structured-merge discipline as
+   * `package.json`/`.env.example`, rather than a fragment shipping
+   * `app/routes.ts` as a static file. Became necessary once a second,
+   * independently-selected layer (storage's `/files`) needed to add a
+   * top-level route alongside whatever auth fragment already owns `/`,
+   * `/sign-in`, `/dashboard`, `/notes` — exactly the scenario a shared
+   * file needs a merger for, not fragment-owned static files.
+   */
+  routes?: readonly RouteEntry[];
 }
 
 export interface Glue {
@@ -104,6 +123,8 @@ export interface Glue {
    * walking `files` on disk.
    */
   fileManifest: readonly string[];
+  /** Same rationale and mechanism as `Provider.routes` (ticket 013). */
+  routes?: readonly RouteEntry[];
 }
 
 /**

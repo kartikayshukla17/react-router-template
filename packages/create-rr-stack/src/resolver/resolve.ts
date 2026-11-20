@@ -126,6 +126,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.storage === "s3-presigned") {
+    const provider = findProvider("storage", "s3-presigned");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
 }
 

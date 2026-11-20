@@ -5,14 +5,16 @@
  * at runtime.
  *
  * Merge discipline (PRD.md §9): fragments add whole files at their own
- * paths, or change shared files (`package.json`, `.env.example`) only
- * through the structured mergers in `merge/`. Two fragments claiming the
- * same output path is a hard failure, not a silent overwrite.
+ * paths, or change shared files (`package.json`, `.env.example`,
+ * `app/routes.ts` — ticket 013) only through the structured mergers in
+ * `merge/`. Two fragments claiming the same output path is a hard
+ * failure, not a silent overwrite.
  */
 
 import type { Plan } from "../resolver/types.js";
 import { mergeEnvExample } from "./merge/env-example.js";
 import { mergePackageJson } from "./merge/package-json.js";
+import { mergeRoutes } from "./merge/routes.js";
 import { dirnamePath, joinPath } from "./paths.js";
 import type { FileSystem, ScaffoldResult } from "./types.js";
 
@@ -87,6 +89,10 @@ export async function scaffold(
   await fs.writeFile(envExamplePath, mergeEnvExample(existingEnvExample, plan.env));
   writtenPaths.push(envExamplePath);
 
+  const routesPath = joinPath(targetDir, "app", "routes.ts");
+  await fs.writeFile(routesPath, mergeRoutes(plan.providers, plan.glue));
+  writtenPaths.push(routesPath);
+
   return { ok: true, writtenPaths };
 }
 
@@ -98,7 +104,7 @@ export async function scaffold(
  * pre-claimed paths below and treated exactly like a fragment-vs-fragment
  * collision.
  */
-const MERGE_TARGET_FILENAMES = ["package.json", ".env.example"] as const;
+const MERGE_TARGET_FILENAMES = ["package.json", ".env.example", "app/routes.ts"] as const;
 
 function detectPathCollisions(
   fragments: readonly Fragment[],

@@ -137,6 +137,18 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
     }
   }
 
+  const storageChoices: ClackOption[] = [
+    ...availableOptions(options("storage", selections)),
+    { value: "none", label: "None" },
+  ];
+  const storage = await p.select<string>({ message: "Storage", options: storageChoices });
+  if (p.isCancel(storage)) {
+    return cancelledWithNothingWritten();
+  }
+  if (storage !== "none") {
+    selections.storage = storage;
+  }
+
   // No "Include the demo app?" prompt: the demo routes (landing, sign-in,
   // dashboard, notes) currently ship unconditionally with the
   // `better-auth+drizzle` glue fragment whenever both ORM and auth are
@@ -205,6 +217,7 @@ function formatPlanSummary(selections: Selections, providerLabels: readonly stri
     `Database: ${selections.database ?? "none"}${selections.postgresHost ? ` (${selections.postgresHost})` : ""}${selections.mongoHost ? ` (${selections.mongoHost})` : ""}`,
     `ORM: ${selections.orm ?? "none"}`,
     `Auth: ${selections.auth ?? "none"}`,
+    `Storage: ${selections.storage ?? "none"}`,
     `Demo app: ${selections.extras?.example ? "yes" : "no"}`,
     "",
     `Providers to install: ${providerLabels.length > 0 ? providerLabels.join(", ") : "(none)"}`,

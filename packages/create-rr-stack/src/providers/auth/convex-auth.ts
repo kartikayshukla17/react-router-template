@@ -25,12 +25,19 @@ export const convexAuthProvider = defineProvider({
   files: "providers/auth/convex-auth",
   fileManifest: [
     "convex/auth.ts",
-    "app/routes.ts",
     "app/routes/home.tsx",
     "app/routes/sign-in.tsx",
     "app/routes/dashboard.tsx",
     "app/routes/notes.tsx",
     "app/server/auth.ts",
+  ],
+  // `app/routes.ts` itself is a structured-merge target (ticket 013's
+  // `scaffolder/merge/routes.ts`), not a file this provider ships.
+  routes: [
+    { index: true, file: "routes/home.tsx" },
+    { path: "sign-in", file: "routes/sign-in.tsx" },
+    { path: "dashboard", file: "routes/dashboard.tsx" },
+    { path: "notes", file: "routes/notes.tsx" },
   ],
   nextSteps: [],
 });

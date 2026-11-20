@@ -548,6 +548,47 @@ describe("resolve", () => {
     });
   });
 
+  describe("Storage: S3/R2 presigned upload (ticket 013)", () => {
+    it("resolves storage: s3-presigned alone to exactly the storage provider", () => {
+      const result = resolve({ storage: "s3-presigned" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id)).toEqual(["s3-presigned"]);
+      expect(plan.glue).toEqual([]);
+    });
+
+    it("resolves storage alongside the full Neon + Drizzle + Better Auth slice, adding only the storage provider", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "neon",
+        orm: "drizzle",
+        auth: "better-auth",
+        storage: "s3-presigned",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["better-auth", "drizzle", "postgres-neon", "s3-presigned"].sort(),
+      );
+    });
+
+    it("declares a /files route, distinct from every auth provider's own routes", () => {
+      const provider = (resolve({ storage: "s3-presigned" }) as Plan).providers[0];
+      expect(provider?.routes).toEqual([
+        { path: "files", file: "routes/files.tsx" },
+        { path: "upload-url", file: "routes/upload-url.tsx" },
+      ]);
+    });
+
+    it("has no requires/conflicts, so it never rejects a combination on its own account", () => {
+      const provider = (resolve({ storage: "s3-presigned" }) as Plan).providers[0];
+      expect(provider?.requires ?? []).toEqual([]);
+      expect(provider?.conflicts ?? []).toEqual([]);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
@@ -707,10 +748,6 @@ describe("options", () => {
       { value: "mongodb", label: "MongoDB" },
       { value: "convex", label: "Convex (database + auth + realtime bundle)" },
     ]);
-  });
-
-  it("returns an empty list for a layer with no registered providers yet", () => {
-    expect(options("storage", {})).toEqual([]);
   });
 
   it("lists convex as a realtime option, disabled until database is convex (ticket 012)", () => {

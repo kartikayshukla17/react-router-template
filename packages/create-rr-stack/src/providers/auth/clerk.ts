@@ -38,12 +38,21 @@ export const clerkProvider = defineProvider({
   files: "providers/auth/clerk",
   fileManifest: [
     "app/root.tsx",
-    "app/routes.ts",
     "app/routes/home.tsx",
     "app/routes/sign-in.tsx",
     "app/routes/dashboard.tsx",
     "app/routes/notes.tsx",
     "app/server/auth.ts",
+  ],
+  // `app/routes.ts` itself is a structured-merge target (ticket 013's
+  // `scaffolder/merge/routes.ts`), not a file this provider ships. The
+  // `sign-in/*` splat matches Clerk's own documented shape for a custom
+  // sign-in page — see `app/routes/sign-in.tsx`'s doc comment.
+  routes: [
+    { index: true, file: "routes/home.tsx" },
+    { path: "sign-in/*", file: "routes/sign-in.tsx" },
+    { path: "dashboard", file: "routes/dashboard.tsx" },
+    { path: "notes", file: "routes/notes.tsx" },
   ],
   nextSteps: [
     "Set VITE_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY from the Clerk dashboard's API Keys page.",

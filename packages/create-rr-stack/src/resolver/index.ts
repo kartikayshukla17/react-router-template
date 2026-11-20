@@ -14,6 +14,7 @@ export {
   type ProviderLayer,
   type ResolveResult,
   type ResolverError,
+  type RouteEntry,
   type SelectableLayer,
   type Selections,
 } from "./types.js";
