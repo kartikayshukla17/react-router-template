@@ -92,6 +92,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.auth === "supabase-auth") {
+    const provider = findProvider("auth", "supabase-auth");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
 }
 

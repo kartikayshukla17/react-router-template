@@ -21,6 +21,7 @@ const ORM_OPTIONS: Option[] = [
 const AUTH_OPTIONS: Option[] = [
   { value: "better-auth", label: "Better Auth" },
   { value: "clerk", label: "Clerk" },
+  { value: "supabase-auth", label: "Supabase Auth" },
 ];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {

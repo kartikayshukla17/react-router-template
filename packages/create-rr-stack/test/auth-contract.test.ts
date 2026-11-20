@@ -179,3 +179,74 @@ describe("Clerk vs. Better Auth auth.ts contract (ticket 009)", () => {
     );
   });
 });
+
+describe("Supabase Auth scaffolds without collisions (ticket 010)", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  it("scaffolds Supabase Auth + Neon Postgres + Drizzle — the literal cross-layer-mixing example", async () => {
+    const targetDir = await generateProject(
+      { database: "postgres", postgresHost: "neon", orm: "drizzle", auth: "supabase-auth" },
+      "rr-stack-supabase-auth-neon-",
+    );
+    tempDirs.push(targetDir);
+
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "auth.ts"), "utf8"),
+    ).resolves.toContain("createSupabaseServerClient");
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "supabase-client.ts"), "utf8"),
+    ).resolves.toContain("createSupabaseServerClient");
+  });
+
+  it("shares exactly one supabase-client.ts file for Supabase Auth + Supabase Postgres host, not two", async () => {
+    const targetDir = await generateProject(
+      { database: "postgres", postgresHost: "supabase", orm: "drizzle", auth: "supabase-auth" },
+      "rr-stack-supabase-auth-supabase-pg-",
+    );
+    tempDirs.push(targetDir);
+
+    const pkg = JSON.parse(await readFile(path.join(targetDir, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    };
+    expect(pkg.dependencies["@supabase/supabase-js"]).toBeDefined();
+    expect(pkg.dependencies["@supabase/ssr"]).toBeDefined();
+
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "supabase-client.ts"), "utf8"),
+    ).resolves.toContain("createSupabaseServerClient");
+  });
+});
+
+describe("Supabase Auth vs. Better Auth auth.ts contract (ticket 010)", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  it("exports the identical getSession/requireUser/signOut surface for Supabase Auth with no database as for Better Auth + Drizzle + Postgres", async () => {
+    const betterAuthTs = await generateAuthTs(
+      { database: "postgres", postgresHost: "docker", orm: "drizzle", auth: "better-auth" },
+      "rr-stack-better-auth-2-",
+    );
+    const supabaseAuthTs = await generateAuthTs(
+      { auth: "supabase-auth" },
+      "rr-stack-supabase-auth-nodb-",
+    );
+
+    const betterAuthSignatures = extractExportedFunctionSignatures(betterAuthTs);
+    const supabaseAuthSignatures = extractExportedFunctionSignatures(supabaseAuthTs);
+
+    for (const name of PUBLIC_INTERFACE_NAMES) {
+      const betterAuthFn = betterAuthSignatures.find((s) => s.name === name);
+      const supabaseAuthFn = supabaseAuthSignatures.find((s) => s.name === name);
+      expect(betterAuthFn, `Better Auth auth.ts should export ${name}`).toBeDefined();
+      expect(supabaseAuthFn, `Supabase Auth auth.ts should export ${name}`).toBeDefined();
+      expect(supabaseAuthFn?.paramCount).toBe(betterAuthFn?.paramCount);
+    }
+  });
+});

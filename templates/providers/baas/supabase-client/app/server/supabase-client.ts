@@ -25,7 +25,8 @@
  * admin tasks bypassing RLS), add that as its own export built from a
  * service-role key — never by mutating or reusing `supabase` below.
  */
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? "";
@@ -38,3 +39,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+/**
+ * Per-request, cookie-scoped client (ticket 010's `auth/supabase-auth`,
+ * and any future layer that needs a signed-in user's own Postgres role
+ * under RLS) — the factory this file's own doc comment above calls for.
+ * Built fresh per request from `@supabase/ssr`'s standard
+ * `createServerClient` + `parseCookieHeader`/`serializeCookieHeader` glue,
+ * since `@supabase/ssr`'s cookie methods are framework-agnostic (no
+ * built-in React Router adapter): `getAll()` reads the incoming `Cookie`
+ * header, `setAll()` collects every cookie Supabase wants to set into
+ * `headers` for the caller to copy onto whatever `Response` it returns
+ * (same shape as `better-auth`'s `signOut`/`sign-in` action — see
+ * `auth/supabase-auth`'s `app/server/auth.ts`).
+ */
+export function createSupabaseServerClient(request: Request): {
+  supabase: SupabaseClient;
+  headers: Headers;
+} {
+  const headers = new Headers();
+  const client = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return parseCookieHeader(request.headers.get("Cookie") ?? "");
+      },
+      setAll(cookiesToSet) {
+        for (const { name, value, options } of cookiesToSet) {
+          headers.append("Set-Cookie", serializeCookieHeader(name, value, options));
+        }
+      },
+    },
+  });
+  return { supabase: client, headers };
+}

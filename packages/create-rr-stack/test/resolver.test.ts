@@ -391,6 +391,68 @@ describe("resolve", () => {
     });
   });
 
+  describe("Supabase Auth (ticket 010)", () => {
+    it("resolves supabase-auth alone, with no database, to the auth provider plus the shared Supabase client", () => {
+      const result = resolve({ auth: "supabase-auth" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["supabase-auth", "supabase-client"].sort(),
+      );
+      expect(plan.glue).toEqual([]);
+    });
+
+    it("resolves the literal cross-layer-mixing example: Supabase Auth + Neon Postgres + Drizzle", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "neon",
+        orm: "drizzle",
+        auth: "supabase-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["drizzle", "postgres-neon", "supabase-auth", "supabase-client"].sort(),
+      );
+      // Only the ORM+host driver glue — nothing pairs supabase-auth with drizzle.
+      expect(plan.glue.map((g) => g.between).sort()).toEqual([["drizzle", "postgres-neon"]]);
+    });
+
+    it("resolves supabase-auth + SQLite (no Supabase database at all) to the auth provider, sqlite, drizzle, and still exactly one shared client", () => {
+      const result = resolve({ database: "sqlite", orm: "drizzle", auth: "supabase-auth" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
+    });
+
+    it("shares exactly one supabase-client fragment between the Supabase Postgres host and Supabase Auth, not two", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "supabase",
+        orm: "drizzle",
+        auth: "supabase-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["drizzle", "postgres-supabase", "supabase-auth", "supabase-client"].sort(),
+      );
+    });
+
+    it("has no requires/conflicts, so it never rejects a combination on its own account", () => {
+      const provider = (resolve({ auth: "supabase-auth" }) as Plan).providers.find(
+        (p) => p.id === "supabase-auth",
+      );
+      expect(provider?.requires ?? []).toEqual([]);
+      expect(provider?.conflicts ?? []).toEqual([]);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
@@ -593,12 +655,15 @@ describe("options", () => {
     const withNothingSelected = options("auth", {});
     const betterAuthOption = withNothingSelected.find((o) => o.value === "better-auth");
     expect(betterAuthOption?.disabled).toBe(true);
-    // clerk (ticket 009) has no requires, so it's never disabled by this check.
+    // clerk (009) and supabase-auth (010) have no requires, so neither is
+    // ever disabled by this check.
     expect(withNothingSelected.find((o) => o.value === "clerk")?.disabled).toBeUndefined();
+    expect(withNothingSelected.find((o) => o.value === "supabase-auth")?.disabled).toBeUndefined();
 
     expect(options("auth", { database: "postgres", orm: "drizzle" })).toEqual([
       { value: "better-auth", label: "Better Auth" },
       { value: "clerk", label: "Clerk" },
+      { value: "supabase-auth", label: "Supabase Auth" },
     ]);
   });
 
@@ -638,6 +703,7 @@ describe("options", () => {
     expect(options("auth", { database: "sqlite", orm: "drizzle" })).toEqual([
       { value: "better-auth", label: "Better Auth" },
       { value: "clerk", label: "Clerk" },
+      { value: "supabase-auth", label: "Supabase Auth" },
     ]);
   });
 
@@ -730,6 +796,7 @@ describe("options", () => {
       expect(options("auth", { database: "postgres", orm: "prisma" })).toEqual([
         { value: "better-auth", label: "Better Auth" },
         { value: "clerk", label: "Clerk" },
+        { value: "supabase-auth", label: "Supabase Auth" },
       ]);
     });
 
