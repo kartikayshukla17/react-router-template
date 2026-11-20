@@ -25,9 +25,16 @@ import { fileURLToPath } from "node:url";
  * tsdown-bundled CLI (`dist/cli.mjs`), where this module's code ends up
  * inlined at a different nesting level.
  *
- * `templates/` isn't bundled into the published package yet (tracked for the
- * npm-publish ticket, 019) — this resolves correctly for running the CLI
- * from source or from `dist/` inside this monorepo checkout.
+ * Resolves correctly in three situations with this one unchanged walk:
+ * running from source (`src/providers/templates-root.ts`, walks up to the
+ * repo root's `templates/`); running the bundled dev build from inside
+ * this monorepo checkout (`dist/cli.mjs`, same walk, same repo-root
+ * `templates/`); and running the *published* package after a real `npm
+ * install` outside this monorepo entirely, where there is no repo-root
+ * `templates/` to walk up to at all — `scripts/copy-templates.mjs`
+ * (ticket 019's publish-readiness fix) copies `templates/` into `dist/
+ * templates/` as a build step, so the walk's very first check (a
+ * `templates/` sibling of this bundled file) finds it immediately.
  */
 function findTemplatesRoot(): string {
   let dir = path.dirname(fileURLToPath(import.meta.url));

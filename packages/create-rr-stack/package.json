@@ -1,11 +1,29 @@
 {
   "name": "create-rr-stack",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Scaffold a React Router v8 app wired to the database, auth, storage and realtime providers you choose.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kartikayshukla17/react-router-template.git",
+    "directory": "packages/create-rr-stack"
+  },
+  "homepage": "https://github.com/kartikayshukla17/react-router-template#readme",
+  "bugs": "https://github.com/kartikayshukla17/react-router-template/issues",
+  "keywords": [
+    "react-router",
+    "scaffold",
+    "cli",
+    "create",
+    "generator",
+    "drizzle",
+    "prisma",
+    "better-auth",
+    "convex"
+  ],
   "bin": {
-    "create-rr-stack": "./dist/cli.mjs"
+    "create-rr-stack": "dist/cli.mjs"
   },
   "files": [
     "dist"
@@ -14,7 +32,7 @@
     "node": ">=22.22.0"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node scripts/copy-templates.mjs",
     "dev": "tsdown --watch",
     "test": "vitest run",
     "test:watch": "vitest",
