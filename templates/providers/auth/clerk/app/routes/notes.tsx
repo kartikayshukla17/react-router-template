@@ -1,6 +1,7 @@
 import { Form } from "react-router";
 import { requireUser } from "~/server/auth";
 import { createNote, deleteNote, listNotes } from "~/server/db";
+import { notifyNotesChanged, useNotesRealtime } from "~/lib/notes-realtime";
 import type { Route } from "./+types/notes";
 
 export function meta(_args: Route.MetaArgs) {
@@ -29,15 +30,18 @@ export async function action({ request }: Route.ActionArgs) {
     const title = String(formData.get("title") ?? "");
     const content = String(formData.get("content") ?? "");
     await createNote(user.id, title, content);
+    await notifyNotesChanged();
   } else if (intent === "delete") {
     const id = String(formData.get("id") ?? "");
     await deleteNote(user.id, id);
+    await notifyNotesChanged();
   }
 
   return null;
 }
 
 export default function Notes({ loaderData }: Route.ComponentProps) {
+  useNotesRealtime();
   return (
     <main className="mx-auto min-h-screen max-w-xl space-y-6 p-8">
       <h1 className="text-2xl font-bold">Notes</h1>

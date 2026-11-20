@@ -147,6 +147,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.realtime === "supabase-realtime") {
+    const provider = findProvider("realtime", "supabase-realtime");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
 }
 

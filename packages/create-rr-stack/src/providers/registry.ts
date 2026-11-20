@@ -15,6 +15,7 @@ import { drizzleProvider } from "./orm/drizzle.js";
 import { mongooseProvider } from "./orm/mongoose.js";
 import { prismaProvider } from "./orm/prisma.js";
 import { convexRealtimeProvider } from "./realtime/convex.js";
+import { supabaseRealtimeProvider } from "./realtime/supabase-realtime.js";
 import { firebaseStorageProvider } from "./storage/firebase-storage.js";
 import { s3PresignedProvider } from "./storage/s3-presigned.js";
 import { supabaseStorageProvider } from "./storage/supabase-storage.js";
@@ -52,6 +53,7 @@ export const allProviders: readonly Provider[] = [
   s3PresignedProvider,
   supabaseStorageProvider,
   firebaseStorageProvider,
+  supabaseRealtimeProvider,
 ];
 
 export function findProvider(layer: Provider["layer"], id: string): Provider | undefined {

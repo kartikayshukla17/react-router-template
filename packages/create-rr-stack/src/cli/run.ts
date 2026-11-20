@@ -149,6 +149,25 @@ export async function runCli(argv: readonly string[], env: NodeJS.ProcessEnv): P
     selections.storage = storage;
   }
 
+  if (selections.database === "convex") {
+    // Already pre-filled by the Convex bundle (ticket 012) — asking would
+    // only ever offer one real choice, same reasoning as skipping the
+    // ORM/auth prompts above.
+    p.log.info('Convex selected: skipping the realtime prompt — using "Convex Realtime".');
+  } else {
+    const realtimeChoices: ClackOption[] = [
+      ...availableOptions(options("realtime", selections)),
+      { value: "none", label: "None" },
+    ];
+    const realtime = await p.select<string>({ message: "Realtime", options: realtimeChoices });
+    if (p.isCancel(realtime)) {
+      return cancelledWithNothingWritten();
+    }
+    if (realtime !== "none") {
+      selections.realtime = realtime;
+    }
+  }
+
   // No "Include the demo app?" prompt: the demo routes (landing, sign-in,
   // dashboard, notes) currently ship unconditionally with the
   // `better-auth+drizzle` glue fragment whenever both ORM and auth are
@@ -218,6 +237,7 @@ function formatPlanSummary(selections: Selections, providerLabels: readonly stri
     `ORM: ${selections.orm ?? "none"}`,
     `Auth: ${selections.auth ?? "none"}`,
     `Storage: ${selections.storage ?? "none"}`,
+    `Realtime: ${selections.realtime ?? "none"}`,
     `Demo app: ${selections.extras?.example ? "yes" : "no"}`,
     "",
     `Providers to install: ${providerLabels.length > 0 ? providerLabels.join(", ") : "(none)"}`,

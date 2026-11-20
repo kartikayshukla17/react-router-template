@@ -656,6 +656,48 @@ describe("resolve", () => {
     });
   });
 
+  describe("Realtime: Supabase Realtime (ticket 015)", () => {
+    it("resolves Supabase Realtime + Neon database + Clerk auth (realtime independent of database/auth, not Convex)", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "neon",
+        orm: "drizzle",
+        auth: "clerk",
+        realtime: "supabase-realtime",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["clerk", "drizzle", "postgres-neon", "supabase-client", "supabase-realtime"].sort(),
+      );
+    });
+
+    it("shares exactly one supabase-client fragment when Realtime is combined with Supabase Auth", () => {
+      const result = resolve({ auth: "supabase-auth", realtime: "supabase-realtime" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
+    });
+
+    it("shares exactly one supabase-client fragment when Realtime is combined with Supabase Storage", () => {
+      const result = resolve({ storage: "supabase-storage", realtime: "supabase-realtime" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "supabase-client")).toHaveLength(1);
+    });
+
+    it("has no requires, and conflicts only with database: convex, so it never rejects a non-Convex combination on its own account", () => {
+      const provider = (resolve({ realtime: "supabase-realtime" }) as Plan).providers.find(
+        (p) => p.id === "supabase-realtime",
+      );
+      expect(provider?.requires ?? []).toEqual([]);
+      expect(provider?.conflicts).toEqual([{ layer: "database", oneOf: ["convex"] }]);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
@@ -817,7 +859,7 @@ describe("options", () => {
     ]);
   });
 
-  it("lists convex as a realtime option, disabled until database is convex (ticket 012)", () => {
+  it("lists convex as a realtime option, disabled until database is convex (ticket 012); supabase-realtime is never disabled (ticket 015)", () => {
     expect(options("realtime", {})).toEqual([
       {
         value: "convex",
@@ -825,9 +867,16 @@ describe("options", () => {
         disabled: true,
         reason: expect.stringContaining("database"),
       },
+      { value: "supabase-realtime", label: "Supabase Realtime" },
     ]);
     expect(options("realtime", { database: "convex" })).toEqual([
       { value: "convex", label: "Convex Realtime" },
+      {
+        value: "supabase-realtime",
+        label: "Supabase Realtime",
+        disabled: true,
+        reason: expect.stringContaining("convex"),
+      },
     ]);
   });
 

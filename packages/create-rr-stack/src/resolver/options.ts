@@ -26,7 +26,10 @@ const AUTH_OPTIONS: Option[] = [
   { value: "firebase-auth", label: "Firebase Auth" },
   { value: "convex-auth", label: "Convex Auth" },
 ];
-const REALTIME_OPTIONS: Option[] = [{ value: "convex", label: "Convex Realtime" }];
+const REALTIME_OPTIONS: Option[] = [
+  { value: "convex", label: "Convex Realtime" },
+  { value: "supabase-realtime", label: "Supabase Realtime" },
+];
 const STORAGE_OPTIONS: Option[] = [
   { value: "s3-presigned", label: "S3 / Cloudflare R2 (presigned upload)" },
   { value: "supabase-storage", label: "Supabase Storage" },
