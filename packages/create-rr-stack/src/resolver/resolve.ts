@@ -99,6 +99,13 @@ function selectProviders(selections: Selections): Provider[] {
     }
   }
 
+  if (selections.auth === "firebase-auth") {
+    const provider = findProvider("auth", "firebase-auth");
+    if (provider) {
+      selected.push(provider);
+    }
+  }
+
   return selected;
 }
 

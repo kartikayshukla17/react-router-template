@@ -250,3 +250,81 @@ describe("Supabase Auth vs. Better Auth auth.ts contract (ticket 010)", () => {
     }
   });
 });
+
+describe("Firebase Auth scaffolds without collisions (ticket 011)", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  it("scaffolds Firebase Auth + Neon Postgres + Drizzle — the grilling-round-3 combination", async () => {
+    const targetDir = await generateProject(
+      { database: "postgres", postgresHost: "neon", orm: "drizzle", auth: "firebase-auth" },
+      "rr-stack-firebase-auth-neon-",
+    );
+    tempDirs.push(targetDir);
+
+    const pkg = JSON.parse(await readFile(path.join(targetDir, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    };
+    expect(pkg.dependencies.firebase).toBeDefined();
+    expect(pkg.dependencies["firebase-admin"]).toBeDefined();
+
+    await expect(
+      readFile(path.join(targetDir, "app", "server", "auth.ts"), "utf8"),
+    ).resolves.toContain("firebase-admin");
+    await expect(
+      readFile(path.join(targetDir, "app", "routes", "sign-in.tsx"), "utf8"),
+    ).resolves.toContain("firebase/auth");
+    await expect(
+      readFile(path.join(targetDir, "app", "lib", "firebase-client.ts"), "utf8"),
+    ).resolves.toContain("firebaseAuth");
+  });
+
+  it("scaffolds Firebase Auth with no database — notes.tsx still lands against the throwing db stub", async () => {
+    const targetDir = await generateProject(
+      { auth: "firebase-auth" },
+      "rr-stack-firebase-auth-nodb-",
+    );
+    tempDirs.push(targetDir);
+
+    const envExample = await readFile(path.join(targetDir, ".env.example"), "utf8");
+    expect(envExample).toContain("VITE_FIREBASE_API_KEY=");
+    expect(envExample).toContain("FIREBASE_PRIVATE_KEY=");
+
+    await expect(
+      readFile(path.join(targetDir, "app", "routes", "notes.tsx"), "utf8"),
+    ).resolves.toContain("listNotes");
+  });
+});
+
+describe("Firebase Auth vs. Better Auth auth.ts contract (ticket 011)", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  it("exports the identical getSession/requireUser/signOut surface for Firebase Auth with no database as for Better Auth + Drizzle + Postgres", async () => {
+    const betterAuthTs = await generateAuthTs(
+      { database: "postgres", postgresHost: "docker", orm: "drizzle", auth: "better-auth" },
+      "rr-stack-better-auth-3-",
+    );
+    const firebaseAuthTs = await generateAuthTs(
+      { auth: "firebase-auth" },
+      "rr-stack-firebase-auth-nodb-2-",
+    );
+
+    const betterAuthSignatures = extractExportedFunctionSignatures(betterAuthTs);
+    const firebaseAuthSignatures = extractExportedFunctionSignatures(firebaseAuthTs);
+
+    for (const name of PUBLIC_INTERFACE_NAMES) {
+      const betterAuthFn = betterAuthSignatures.find((s) => s.name === name);
+      const firebaseAuthFn = firebaseAuthSignatures.find((s) => s.name === name);
+      expect(betterAuthFn, `Better Auth auth.ts should export ${name}`).toBeDefined();
+      expect(firebaseAuthFn, `Firebase Auth auth.ts should export ${name}`).toBeDefined();
+      expect(firebaseAuthFn?.paramCount).toBe(betterAuthFn?.paramCount);
+    }
+  });
+});

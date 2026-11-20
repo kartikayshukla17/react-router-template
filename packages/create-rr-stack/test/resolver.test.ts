@@ -453,6 +453,51 @@ describe("resolve", () => {
     });
   });
 
+  describe("Firebase Auth (ticket 011)", () => {
+    it("resolves firebase-auth alone, with no database, to the auth provider plus the shared Firebase client", () => {
+      const result = resolve({ auth: "firebase-auth" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["firebase-auth", "firebase-client"].sort(),
+      );
+      expect(plan.glue).toEqual([]);
+    });
+
+    it("resolves Firebase Auth + Neon Postgres + Drizzle — the exact combination asked about in grilling round 3", () => {
+      const result = resolve({
+        database: "postgres",
+        postgresHost: "neon",
+        orm: "drizzle",
+        auth: "firebase-auth",
+      });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.map((p) => p.id).sort()).toEqual(
+        ["drizzle", "firebase-auth", "firebase-client", "postgres-neon"].sort(),
+      );
+      expect(plan.glue.map((g) => g.between).sort()).toEqual([["drizzle", "postgres-neon"]]);
+    });
+
+    it("resolves Firebase Auth + SQLite to the auth provider, sqlite, drizzle, and exactly one shared client", () => {
+      const result = resolve({ database: "sqlite", orm: "drizzle", auth: "firebase-auth" });
+
+      expect(isErrors(result)).toBe(false);
+      const plan = result as Plan;
+      expect(plan.providers.filter((p) => p.id === "firebase-client")).toHaveLength(1);
+    });
+
+    it("has no requires/conflicts, so it never rejects a combination on its own account", () => {
+      const provider = (resolve({ auth: "firebase-auth" }) as Plan).providers.find(
+        (p) => p.id === "firebase-auth",
+      );
+      expect(provider?.requires ?? []).toEqual([]);
+      expect(provider?.conflicts ?? []).toEqual([]);
+    });
+  });
+
   const unresolvableCases: Array<{ name: string; selections: Selections }> = [
     { name: "postgres with no host at all", selections: { database: "postgres" } },
     {
@@ -655,15 +700,17 @@ describe("options", () => {
     const withNothingSelected = options("auth", {});
     const betterAuthOption = withNothingSelected.find((o) => o.value === "better-auth");
     expect(betterAuthOption?.disabled).toBe(true);
-    // clerk (009) and supabase-auth (010) have no requires, so neither is
-    // ever disabled by this check.
+    // clerk (009), supabase-auth (010) and firebase-auth (011) have no
+    // requires, so none of them is ever disabled by this check.
     expect(withNothingSelected.find((o) => o.value === "clerk")?.disabled).toBeUndefined();
     expect(withNothingSelected.find((o) => o.value === "supabase-auth")?.disabled).toBeUndefined();
+    expect(withNothingSelected.find((o) => o.value === "firebase-auth")?.disabled).toBeUndefined();
 
     expect(options("auth", { database: "postgres", orm: "drizzle" })).toEqual([
       { value: "better-auth", label: "Better Auth" },
       { value: "clerk", label: "Clerk" },
       { value: "supabase-auth", label: "Supabase Auth" },
+      { value: "firebase-auth", label: "Firebase Auth" },
     ]);
   });
 
@@ -704,6 +751,7 @@ describe("options", () => {
       { value: "better-auth", label: "Better Auth" },
       { value: "clerk", label: "Clerk" },
       { value: "supabase-auth", label: "Supabase Auth" },
+      { value: "firebase-auth", label: "Firebase Auth" },
     ]);
   });
 
@@ -797,6 +845,7 @@ describe("options", () => {
         { value: "better-auth", label: "Better Auth" },
         { value: "clerk", label: "Clerk" },
         { value: "supabase-auth", label: "Supabase Auth" },
+        { value: "firebase-auth", label: "Firebase Auth" },
       ]);
     });
 

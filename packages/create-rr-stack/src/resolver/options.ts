@@ -22,6 +22,7 @@ const AUTH_OPTIONS: Option[] = [
   { value: "better-auth", label: "Better Auth" },
   { value: "clerk", label: "Clerk" },
   { value: "supabase-auth", label: "Supabase Auth" },
+  { value: "firebase-auth", label: "Firebase Auth" },
 ];
 
 const REGISTERED_OPTIONS: Record<SelectableLayer, Option[]> = {

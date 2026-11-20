@@ -1,4 +1,5 @@
 import type { Provider } from "../resolver/types.js";
+import { firebaseClientProvider } from "./baas/firebase-client.js";
 import { supabaseClientProvider } from "./baas/supabase-client.js";
 
 /**
@@ -8,13 +9,13 @@ import { supabaseClientProvider } from "./baas/supabase-client.js";
  * `Selections` names a `baas` provider directly (see
  * `providers/baas/supabase-client.ts`'s doc comment for why).
  *
- * `firebase`/`convex` have no entry yet — intentionally `undefined` until
- * a provider for that BaaS exists, exactly like
- * `DRIZZLE_SUPPORTED_POSTGRES_HOSTS` staying an explicit allowlist in
- * `resolver/rules.ts`.
+ * `convex` has no entry yet — intentionally `undefined` until ticket 012
+ * adds a provider for it, exactly like `DRIZZLE_SUPPORTED_POSTGRES_HOSTS`
+ * staying an explicit allowlist in `resolver/rules.ts`.
  */
 const baasClientProviders: Partial<Record<NonNullable<Provider["baas"]>, Provider>> = {
   supabase: supabaseClientProvider,
+  firebase: firebaseClientProvider,
 };
 
 export function findBaasClientProvider(baas: NonNullable<Provider["baas"]>): Provider | undefined {
