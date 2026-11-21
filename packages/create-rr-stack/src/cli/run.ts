@@ -60,7 +60,7 @@ async function runNonInteractive(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Pr
   const projectName = parsed.projectName ?? "my-app";
   const targetDir = path.resolve(process.cwd(), projectName);
 
-  console.log("create-rr-stack");
+  console.log("create-rrstack");
   console.log("");
 
   if (existsSync(targetDir) && readdirSync(targetDir).length > 0) {
@@ -130,7 +130,7 @@ async function runNonInteractive(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Pr
 }
 
 async function runInteractive(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<number> {
-  p.intro("create-rr-stack");
+  p.intro("create-rrstack");
 
   let projectName = parsed.projectName;
   if (projectName === undefined) {

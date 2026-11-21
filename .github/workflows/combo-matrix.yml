@@ -128,7 +128,7 @@ jobs:
         with:
           node-version: ">=22.22.0"
       - run: npm ci
-      - run: npm run build --workspace=create-rr-stack
+      - run: npm run build --workspace=create-rrstack
       - name: Generate (${{ matrix.combo.name }})
         run: |
           node packages/create-rr-stack/dist/cli.mjs generated-app \

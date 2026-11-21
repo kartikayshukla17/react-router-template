@@ -2,7 +2,7 @@ import type { Act } from "../stageshow-kit";
 import { Caret, Prompt, Stage, Window } from "../stageshow-kit";
 import "./HeroPanel.css";
 
-const COMMAND = "npm create rr-stack@latest";
+const COMMAND = "npm create rrstack@latest";
 
 const LAYERS: Array<[string, string]> = [
   ["Database", "Postgres (Neon)"],

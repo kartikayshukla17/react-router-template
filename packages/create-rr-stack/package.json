@@ -1,5 +1,5 @@
 {
-  "name": "create-rr-stack",
+  "name": "create-rrstack",
   "version": "1.0.0",
   "description": "Scaffold a React Router v8 app wired to the database, auth, storage and realtime providers you choose.",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "convex"
   ],
   "bin": {
-    "create-rr-stack": "dist/cli.mjs"
+    "create-rrstack": "dist/cli.mjs"
   },
   "files": [
     "dist"
@@ -33,6 +33,7 @@
   },
   "scripts": {
     "build": "tsdown && node scripts/copy-templates.mjs",
+    "prepare": "npm run build",
     "dev": "tsdown --watch",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -11,12 +11,12 @@ block before posting; it's not part of the post itself.
 ## Short version (Twitter/X thread)
 
 **1/**
-Shipped `create-rr-stack`: a `create-*` CLI for React Router v8 that actually wires
+Shipped `create-rrstack`: a `create-*` CLI for React Router v8 that actually wires
 up the stack you pick — database, ORM, auth, storage, realtime — instead of handing
 you a landing page and a TODO list.
 
 ```
-npm create rr-stack@latest
+npm create rrstack@latest
 ```
 
 **2/**
@@ -60,14 +60,14 @@ multi-provider generator actually gets built: [repo link]
 
 ## Longer version (blog post / README-style announcement)
 
-### `create-rr-stack`: a React Router scaffold that doesn't lie to you about being done
+### `create-rrstack`: a React Router scaffold that doesn't lie to you about being done
 
 Most `create-*` CLIs ask you two or three questions and hand you a landing page.
 The real work — wiring up a database, picking an ORM, getting auth to actually
 protect a route, getting file uploads to actually upload — starts after the
 generator finishes.
 
-`create-rr-stack` tries to close that gap. It's a scaffold for
+`create-rrstack` tries to close that gap. It's a scaffold for
 [React Router v8](https://reactrouter.com) apps where every provider you can pick
 is a complete, working implementation, not a stub:
 
@@ -92,7 +92,7 @@ later you want Supabase Auth instead — your routes don't need to change, just 
 one flag you pass at generation time.
 
 ```bash
-npm create rr-stack@latest
+npm create rrstack@latest
 ```
 
 answers a handful of prompts (or skip them entirely with `--yes` and flags — it's
@@ -113,5 +113,5 @@ you're curious how a generator with this many moving parts actually gets built:
 **[repo link]**
 
 ```bash
-npm create rr-stack@latest
+npm create rrstack@latest
 ```

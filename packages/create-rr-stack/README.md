@@ -1,10 +1,10 @@
-# create-rr-stack
+# create-rrstack
 
 Scaffold a [React Router v8](https://reactrouter.com) app wired end to end to the
 database, ORM, auth, storage, and realtime providers you choose.
 
 ```bash
-npm create rr-stack@latest
+npm create rrstack@latest
 ```
 
 Answers database → ORM → auth → storage → realtime, shows you the plan, then writes
@@ -63,26 +63,26 @@ same reason.
 
 ```bash
 # Fully interactive — just answer the prompts.
-npm create rr-stack@latest
+npm create rrstack@latest
 
 # Zero prompts, the --yes baseline (SQLite + Drizzle).
-npm create rr-stack@latest my-app -- --yes
+npm create rrstack@latest my-app -- --yes
 
 # A real-world stack, fully flagged.
-npm create rr-stack@latest my-app -- \
+npm create rrstack@latest my-app -- \
   --db postgres --postgres-host neon --orm drizzle \
   --auth better-auth --storage s3-presigned --yes
 
 # Convex: one flag bundles database + auth + realtime.
-npm create rr-stack@latest my-app -- --db convex --yes
+npm create rrstack@latest my-app -- --db convex --yes
 
 # CI/agent-friendly: no prompts, no install, no git.
-npm create rr-stack@latest my-app -- \
+npm create rrstack@latest my-app -- \
   --db sqlite --orm drizzle --auth clerk --yes --no-install --no-git
 ```
 
 (The `--` before the flags keeps `npm create`/`npm init` from trying to parse them
-itself; `npx create-rr-stack@latest my-app --yes` doesn't need one.)
+itself; `npx create-rrstack@latest my-app --yes` doesn't need one.)
 
 ## What's in a generated project
 

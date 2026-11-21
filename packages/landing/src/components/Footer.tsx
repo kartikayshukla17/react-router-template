@@ -13,7 +13,7 @@ export function Footer() {
 
       <div className="site-footer__links">
         <div className="site-footer__col">
-          <div className="site-footer__col-title">create-rr-stack</div>
+          <div className="site-footer__col-title">create-rrstack</div>
           <a
             href="https://github.com/kartikayshukla17/react-router-template"
             target="_blank"
@@ -50,7 +50,7 @@ export function Footer() {
       </div>
 
       <div className="site-footer__legal">
-        &copy; {new Date().getFullYear()} create-rr-stack. Built in public, ticket by ticket.
+        &copy; {new Date().getFullYear()} create-rrstack. Built in public, ticket by ticket.
       </div>
     </footer>
   );

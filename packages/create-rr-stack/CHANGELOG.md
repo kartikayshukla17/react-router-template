@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `create-rr-stack` are documented here. See
+All notable changes to `create-rrstack` are documented here. See
 [`tickets/`](../../tickets) for the full build log, one file per entry below.
 
 ## 1.0.0

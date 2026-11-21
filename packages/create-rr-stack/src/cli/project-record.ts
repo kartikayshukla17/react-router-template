@@ -21,7 +21,7 @@ function findOwnPackageJson(): { version: string } {
     const candidate = path.join(dir, "package.json");
     if (existsSync(candidate)) {
       const pkg = require(candidate) as { name?: string; version: string };
-      if (pkg.name === "create-rr-stack") {
+      if (pkg.name === "create-rrstack") {
         return pkg;
       }
     }
@@ -32,7 +32,7 @@ function findOwnPackageJson(): { version: string } {
     dir = parent;
   }
 
-  throw new Error("Could not locate create-rr-stack's own package.json from cli/project-record.ts");
+  throw new Error("Could not locate create-rrstack's own package.json from cli/project-record.ts");
 }
 
 const ownPackageJson = findOwnPackageJson();

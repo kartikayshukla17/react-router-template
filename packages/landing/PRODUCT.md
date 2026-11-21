@@ -12,19 +12,19 @@ Vite + React + TypeScript + Tailwind CSS, as a new `packages/landing` workspace 
 
 ## Users
 
-Developers who land on this page from npm, GitHub, or search while deciding whether to scaffold their next React Router v8 project with `create-rr-stack` instead of hand-wiring a database/auth/storage stack themselves, or evaluating it against other `create-*` generators.
+Developers who land on this page from npm, GitHub, or search while deciding whether to scaffold their next React Router v8 project with `create-rrstack` instead of hand-wiring a database/auth/storage stack themselves, or evaluating it against other `create-*` generators.
 
 ## Product Purpose
 
-`create-rr-stack` is a `create-*` CLI (`npm create rr-stack@latest`) that scaffolds a React Router v8 app wired end-to-end to the database, ORM, auth, storage, and realtime providers the user picks. This page is the product's permanent marketing and docs-entry home — not a launch-day teaser — meant to convert a visiting developer into someone who runs the CLI.
+`create-rrstack` is a `create-*` CLI (`npm create rrstack@latest`) that scaffolds a React Router v8 app wired end-to-end to the database, ORM, auth, storage, and realtime providers the user picks. This page is the product's permanent marketing and docs-entry home — not a launch-day teaser — meant to convert a visiting developer into someone who runs the CLI.
 
 ## Positioning
 
-Most `create-*` CLIs ask two or three questions and hand back a landing page with a TODO list; the real wiring work starts after the generator finishes. Every provider combination `create-rr-stack` generates is a complete, working implementation: it installs, typechecks, and builds for real, verified by CI on every push and by a weekly dependency-bump job. Every provider for a given layer implements the same fixed interface (`getSession`/`requireUser`/`signOut` for auth, `getUploadUrl`/`getDownloadUrl`/`remove` for storage, `subscribe`/`publish` for realtime), so swapping providers later doesn't require rewriting the routes that call them.
+Most `create-*` CLIs ask two or three questions and hand back a landing page with a TODO list; the real wiring work starts after the generator finishes. Every provider combination `create-rrstack` generates is a complete, working implementation: it installs, typechecks, and builds for real, verified by CI on every push and by a weekly dependency-bump job. Every provider for a given layer implements the same fixed interface (`getSession`/`requireUser`/`signOut` for auth, `getUploadUrl`/`getDownloadUrl`/`remove` for storage, `subscribe`/`publish` for realtime), so swapping providers later doesn't require rewriting the routes that call them.
 
 ## Operating Context
 
-Visitors arrive already knowing they want a React Router v8 app; they're deciding whether to trust this generator with their stack. The page's central artifact is the terminal command `npm create rr-stack@latest`, meant to be read, copied, and run. The provider matrix below is the core content, not an aside:
+Visitors arrive already knowing they want a React Router v8 app; they're deciding whether to trust this generator with their stack. The page's central artifact is the terminal command `npm create rrstack@latest`, meant to be read, copied, and run. The provider matrix below is the core content, not an aside:
 
 | Layer | Providers |
 | --- | --- |
@@ -40,7 +40,7 @@ Convex is the one exception to "mix and match": choosing it at the database prom
 
 - The CLI also ships a full non-interactive mode (flags for every prompt, `--yes` for sane zero-account defaults, automatic package-manager detection) — built for scripts and agents as much as for a human typing into a terminal.
 - `npm install` and `git init` run automatically after scaffolding (opt out with `--no-install`/`--no-git`), and a generated `.env.example` lists exactly which environment variables are needed and where to find them.
-- The repo this page lives in (`packages/landing`) is a monorepo workspace; the CLI itself is `packages/create-rr-stack`, published to npm as `create-rr-stack` v1.0.0. The page is a separate static site, not served by the CLI.
+- The repo this page lives in (`packages/landing`) is a monorepo workspace; the CLI itself is `packages/create-rr-stack`, published to npm as `create-rrstack` v1.0.0. The page is a separate static site, not served by the CLI.
 - No hero photo/texture asset exists yet — the user will supply it later. Build the hero to take a full-bleed background image/placeholder now; do not treat the final image as decided.
 
 ## Evidence on Hand

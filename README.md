@@ -1,10 +1,10 @@
-# create-rr-stack
+# create-rrstack
 
 Scaffold a [React Router v8](https://reactrouter.com) app wired end to end to the
 database, ORM, auth, storage, and realtime providers you choose — not a tutorial
 stack, a real one: every combination generates, installs, typechecks, and builds.
 
-This repository is the monorepo for `create-rr-stack`: the CLI itself lives at
+This repository is the monorepo for `create-rrstack`: the CLI itself lives at
 [`packages/create-rr-stack`](packages/create-rr-stack), the provider fragments it
 assembles live at [`templates/`](templates), and the design behind all of it is in
 [`PRD.md`](PRD.md) and [`tickets/`](tickets) (one ticket per vertical slice, in the
@@ -13,7 +13,7 @@ order they were built).
 ## Quickstart
 
 ```bash
-npm create rr-stack@latest
+npm create rrstack@latest
 ```
 
 Answer a few prompts — database, ORM, auth, storage, realtime — and get a working

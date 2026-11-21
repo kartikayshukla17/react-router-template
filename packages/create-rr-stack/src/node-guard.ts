@@ -69,7 +69,7 @@ export function checkNodeVersion(version: string): NodeGuardResult {
       ok: false,
       message: [
         `Unable to parse the current Node.js version ("${version}").`,
-        `create-rr-stack requires Node.js >= ${MIN_NODE_VERSION}.`,
+        `create-rrstack requires Node.js >= ${MIN_NODE_VERSION}.`,
         upgradeHints(),
       ].join("\n"),
     };
@@ -84,7 +84,7 @@ export function checkNodeVersion(version: string): NodeGuardResult {
     return {
       ok: false,
       message: [
-        `create-rr-stack requires Node.js >= ${MIN_NODE_VERSION}, but found ${formatVersion(parsed)}.`,
+        `create-rrstack requires Node.js >= ${MIN_NODE_VERSION}, but found ${formatVersion(parsed)}.`,
         upgradeHints(),
       ].join("\n"),
     };

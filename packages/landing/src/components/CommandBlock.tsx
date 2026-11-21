@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import "./CommandBlock.css";
 
-const COMMAND = "npm create rr-stack@latest";
+const COMMAND = "npm create rrstack@latest";
 
 export function CommandBlock() {
   const [copied, setCopied] = useState(false);

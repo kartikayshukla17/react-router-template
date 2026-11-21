@@ -26,7 +26,7 @@ export function Hero() {
             Every provider is real.
           </h1>
           <p className="t-stagger-line t-stagger-line--2 hero__subhead">
-            <code>create-rr-stack</code> wires a React Router v8 app to the database, auth, storage,
+            <code>create-rrstack</code> wires a React Router v8 app to the database, auth, storage,
             and realtime you pick. Every combination installs, typechecks, and builds &mdash;
             nothing here is a stub waiting on you to finish it.
           </p>

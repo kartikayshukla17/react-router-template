@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Ticket 019's publish-readiness fix: `templates/` has to travel inside
- * the published package, or `npx create-rr-stack` breaks the moment it's
+ * the published package, or `npx create-rrstack` breaks the moment it's
  * installed outside this monorepo — `providers/templates-root.ts`'s
  * `getTemplatesRoot()` only ever finds a `templates/` directory that's
  * actually on disk somewhere above it; it doesn't invent one.
