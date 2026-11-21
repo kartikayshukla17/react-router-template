@@ -1,0 +1,140 @@
+/* The cream band — the 20%. A dense provider table reads better on light, and
+   the light/dark break gives the page its rhythm instead of one long navy
+   scroll. Full-bleed, so the band is a real band. */
+.matrix {
+  position: relative;
+  background: var(--color-cream);
+  padding: 84px 32px 76px;
+  isolation: isolate;
+}
+
+.matrix::before,
+.matrix::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-cream-line);
+}
+.matrix::before {
+  top: 0;
+}
+.matrix::after {
+  bottom: 0;
+}
+
+.matrix__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.matrix__intro {
+  max-width: 640px;
+  margin-bottom: 40px;
+}
+
+.matrix__heading {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--color-ink-light-1); /* 13.7:1 */
+}
+
+.matrix__lede {
+  margin-top: 16px;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-ink-light-2); /* 6.9:1 */
+}
+
+.matrix__ledger {
+  border: 1px solid var(--color-cream-line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fcf9f3;
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 70%),
+    0 1px 2px 0 rgb(20 33 61 / 7%),
+    0 18px 40px -22px rgb(20 33 61 / 28%);
+}
+
+.matrix__row {
+  touch-action: none;
+}
+.matrix__row + .matrix__row {
+  border-top: 1px solid var(--color-cream-line);
+}
+
+.matrix__row-card {
+  display: grid;
+  grid-template-columns: 28px 140px 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 17px 28px;
+  position: relative;
+  transition: background 200ms var(--ease-smooth-out, ease);
+}
+.matrix__row:hover .matrix__row-card {
+  background: rgb(255 107 91 / 5%);
+}
+
+/* Coral at full strength is 2.4:1 on cream — too weak even for a graphic.
+   The deeper coral-ink keeps the hue and clears 5:1. */
+.matrix__row-icon {
+  color: var(--color-coral-ink);
+  display: grid;
+  place-items: center;
+}
+
+.matrix__row-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: var(--color-ink-light-1);
+}
+
+.matrix__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.matrix__chip {
+  font-size: 0.82rem;
+  color: var(--color-ink-light-1); /* 12.3:1 on the chip */
+  background: var(--color-cream-2);
+  border: 1px solid var(--color-cream-line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .matrix {
+    padding: 88px 20px 80px;
+  }
+  .matrix__row-card {
+    grid-template-columns: 24px 1fr;
+    row-gap: 14px;
+    padding: 20px;
+  }
+  .matrix__row-icon {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .matrix__row-name {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .matrix__chips {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

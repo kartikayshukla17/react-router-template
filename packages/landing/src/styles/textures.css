@@ -1,0 +1,107 @@
+/* Surface textures.
+   Three materials, each with a job — none of them decoration for its own sake:
+   - grain: keeps large navy fields from reading as flat printed ink
+   - grid:  the technical ground a developer tool is drawn on
+   - dots:  the cream band's paper tooth, so the light section has substance
+   Every layer is inert (pointer-events: none) and sits under the content. */
+
+:root {
+  --tx-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Grain ------------------------------------------------------------------ */
+
+.tx-grain {
+  position: relative;
+  isolation: isolate;
+}
+.tx-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--tx-grain);
+  background-size: 180px 180px;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+}
+.tx-grain > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* A grain layer placed by hand, for sections that already own their stacking. */
+.tx-grain-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--tx-grain);
+  background-size: 180px 180px;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+/* Blueprint grid --------------------------------------------------------- */
+
+.tx-grid-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(244 237 224 / 100%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(244 237 224 / 100%) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0.035;
+  /* The grid states the ground, then gets out of the way toward the content. */
+  mask-image: radial-gradient(120% 90% at 50% 0%, #000 10%, transparent 72%);
+}
+
+/* Paper tooth, for the cream band ---------------------------------------- */
+
+.tx-dots-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(20 33 61 / 100%) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.06;
+}
+
+.tx-paper-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--tx-grain);
+  background-size: 180px 180px;
+  opacity: 0.1;
+  mix-blend-mode: multiply;
+}
+
+/* Raised surfaces -------------------------------------------------------- */
+
+/* On a dark theme depth comes from a lighter surface plus a top highlight,
+   not from a heavier shadow. */
+.tx-raised {
+  box-shadow:
+    inset 0 1px 0 0 rgb(244 237 224 / 7%),
+    0 1px 2px 0 rgb(5 10 22 / 40%),
+    0 12px 32px -12px rgb(5 10 22 / 55%);
+}
+
+.tx-raised-light {
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 60%),
+    0 1px 2px 0 rgb(20 33 61 / 8%),
+    0 10px 28px -14px rgb(20 33 61 / 22%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-grain::before,
+  .tx-grain-layer,
+  .tx-grid-layer,
+  .tx-dots-layer,
+  .tx-paper-layer {
+    animation: none;
+  }
+}

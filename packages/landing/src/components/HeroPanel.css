@@ -1,0 +1,83 @@
+.hero-panel-stage {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-mono);
+}
+
+.hero-panel-stage .ss-window {
+  box-shadow:
+    inset 0 1px 0 0 rgb(244 237 224 / 8%),
+    0 2px 6px -2px rgb(4 9 20 / 60%),
+    0 30px 60px -20px rgb(4 9 20 / 70%),
+    0 10px 24px -8px rgb(4 9 20 / 55%);
+}
+
+.hero-panel__gap {
+  height: 10px;
+}
+
+.hero-panel__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0;
+  transform: translateY(var(--distance-medium, 12px));
+  filter: blur(var(--blur-medium, 3px));
+  transition:
+    opacity var(--duration-very-slow, 500ms) var(--ease-in-out, ease-in-out),
+    transform var(--duration-very-slow, 500ms) var(--ease-in-out, ease-in-out),
+    filter var(--duration-very-slow, 500ms) var(--ease-in-out, ease-in-out);
+}
+.hero-panel__row[data-shown] {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-panel__row {
+    transition: none;
+  }
+}
+
+.hero-panel__diamond {
+  color: var(--color-coral);
+  font-size: 11px;
+  width: 10px;
+  flex: none;
+}
+
+/* Explicit colors, measured against the terminal's own ground (#0e1830).
+   The kit's --ss-ink-* tokens are placeholder-bar fills (5–7% white) and
+   render as ghosts when borrowed for text — that is the bug these replace. */
+.hero-panel__label {
+  color: #a7b4cc; /* 8.4:1 */
+  width: 78px;
+  flex: none;
+}
+
+.hero-panel__value {
+  color: var(--color-cream); /* 15.1:1 */
+}
+
+.hero-panel__row--done {
+  margin-top: 2px;
+  color: var(--color-coral); /* 6.3:1 */
+  gap: 8px;
+}
+
+.hero-panel__done-text {
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.hero-panel__rest {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  width: 1px;
+  height: 1px;
+}

@@ -7,7 +7,13 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["packages/**/src/**", "packages/**/test/**"]
+    "includes": [
+      "packages/**/src/**",
+      "packages/**/test/**",
+      "!packages/landing/src/stageshow-kit/**",
+      "!packages/landing/src/styles/transitions-root.css",
+      "!packages/landing/src/styles/transitions-snippets.css"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -26,6 +32,11 @@
       "quoteStyle": "double",
       "semicolons": "always",
       "trailingCommas": "all"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

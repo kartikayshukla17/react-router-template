@@ -1,0 +1,144 @@
+.hero {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: flex-start;
+  padding: 104px 32px 96px;
+  overflow: clip;
+  isolation: isolate;
+}
+
+.hero__ground {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  /* Placeholder atmosphere standing in for the real hero photo: a navy dusk
+     lit low and right by the coral, echoing the mood the brief asked for
+     (micro1.ai / diabrowser.com) until the real asset lands. */
+  background:
+    radial-gradient(120% 70% at 76% 6%, rgb(255 107 91 / 18%), transparent 58%),
+    radial-gradient(80% 55% at 12% 96%, rgb(255 107 91 / 9%), transparent 55%),
+    linear-gradient(180deg, #1a2a4c 0%, #14213d 48%, #111c35 100%);
+}
+
+/* The technical ground the product is drawn on: a 72px blueprint grid that
+   states itself at the top and fades out before it reaches the copy. */
+.hero__grid {
+  z-index: -2;
+}
+
+.hero__grain {
+  z-index: -2;
+}
+
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgb(17 28 53 / 0%) 45%,
+    rgb(17 28 53 / 72%) 82%,
+    var(--color-navy) 100%
+  );
+}
+
+.hero__content {
+  position: relative;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 560px);
+  column-gap: 48px;
+  align-items: start;
+}
+
+.hero__text {
+  max-width: 560px;
+  padding-top: 32px;
+}
+
+.hero__headline {
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+
+.hero__subhead {
+  margin-top: 22px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-ink-2);
+  max-width: 54ch;
+}
+.hero__subhead code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  color: var(--color-ink-1);
+}
+
+.hero__actions {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.hero__secondary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink-2);
+  text-decoration: none;
+  font-size: 0.92rem;
+  padding: 2px 0;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
+}
+.hero__secondary-link:hover {
+  color: var(--color-ink-1);
+  border-color: var(--color-ink-3);
+}
+.hero__secondary-link svg {
+  transition: transform 150ms ease;
+}
+.hero__secondary-link:hover svg {
+  transform: translate(1px, -1px);
+}
+
+.hero__panel-wrap {
+  position: relative;
+  margin-top: 96px;
+  filter: drop-shadow(0 40px 70px rgb(0 0 0 / 45%));
+}
+
+@media (max-width: 1000px) {
+  .hero {
+    padding: 88px 20px 64px;
+  }
+  .hero__content {
+    grid-template-columns: 1fr;
+  }
+  .hero__text {
+    max-width: 100%;
+  }
+  .hero__panel-wrap {
+    margin-top: 48px;
+    max-width: 460px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero {
+    padding: 72px 18px 56px;
+  }
+  .hero__panel-wrap {
+    margin-top: 40px;
+    max-width: 100%;
+  }
+}
