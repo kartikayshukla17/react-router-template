@@ -22,8 +22,51 @@ jobs:
   # provider, and realtime provider at least once across 8 combos, not a
   # full cartesian product (that's what combo-snapshot.test.ts's
   # file-list check owns, cheaply, without a real npm install per combo).
+  #
+  # Three further combos (`runtimeSmoke: true`) go one step past
+  # typecheck/build: they actually start the generated server and drive a
+  # real sign-up plus note create/list/delete through it
+  # (`scripts/smoke-test.mjs`), proving the frontend, backend, and
+  # database are wired together correctly at runtime, not just that they
+  # compile. Limited to combos with zero external-service dependencies —
+  # a self-hosted database (SQLite, Docker Postgres, Docker Mongo) paired
+  # with Better Auth, which needs nothing but a secret this job invents.
+  # Every other combo needs a real third-party account (Neon, Supabase,
+  # Firebase, Clerk, Convex, hosted Mongo, S3) this repo's CI has no
+  # secret for, so it stays at typecheck/build only — same reasoning as
+  # the Convex combo's `skipTypecheckBuild`, one step earlier in the
+  # pipeline.
   combo-matrix:
     runs-on: ubuntu-latest
+    services:
+      # Job-level, not per-matrix-entry — GitHub Actions has no way to
+      # start a service only for some matrix combos, so every combo job
+      # gets both, even though only one `runtimeSmoke` combo each
+      # (`docker-postgres-...`, `docker-mongo-...`) actually connects to
+      # one; the third (`sqlite-...`) uses neither. Idle containers an
+      # unrelated combo never touches, not a correctness or secrets
+      # concern.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          # Matches `providers/database/postgres-docker/docker-compose.yml`'s
+          # fixed local-dev credentials exactly, so a generated app's own
+          # `DATABASE_URL` default needs no override here beyond pointing
+          # at localhost.
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +105,21 @@ jobs:
             args: >-
               --db mongodb --mongo-host hosted --orm mongoose
               --auth clerk --storage s3-presigned
+          - name: sqlite-drizzle-better-auth-runtime-smoke
+            args: --db sqlite --orm drizzle --auth better-auth
+            runtimeSmoke: true
+            dbPush: true
+          - name: docker-postgres-drizzle-better-auth-runtime-smoke
+            args: >-
+              --db postgres --postgres-host docker --orm drizzle
+              --auth better-auth
+            runtimeSmoke: true
+            dbPush: true
+            databaseUrl: postgres://app:app@localhost:5432/app
+          - name: docker-mongo-mongoose-better-auth-runtime-smoke
+            args: --db mongodb --mongo-host docker --orm mongoose --auth better-auth
+            runtimeSmoke: true
+            mongodbUri: mongodb://localhost:27017/app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,6 +141,20 @@ jobs:
         working-directory: generated-app
         run: npm run typecheck
       - name: Build
-        if: ${{ !matrix.combo.skipTypecheckBuild }}
+        # `runtimeSmoke` combos skip this: scripts/smoke-test.mjs builds
+        # the app itself as its first step, right before starting it —
+        # running `npm run build` twice would just waste CI time.
+        if: ${{ !matrix.combo.skipTypecheckBuild && !matrix.combo.runtimeSmoke }}
         working-directory: generated-app
         run: npm run build
+      - name: Runtime smoke test (${{ matrix.combo.name }})
+        if: ${{ matrix.combo.runtimeSmoke }}
+        env:
+          PORT: "3100"
+          BETTER_AUTH_SECRET: ci-smoke-test-secret-not-a-real-credential
+          BETTER_AUTH_URL: http://localhost:3100
+          DATABASE_URL: ${{ matrix.combo.databaseUrl }}
+          MONGODB_URI: ${{ matrix.combo.mongodbUri }}
+        run: |
+          node packages/create-rr-stack/scripts/smoke-test.mjs generated-app \
+            ${{ matrix.combo.dbPush && '--db-push' || '' }}
