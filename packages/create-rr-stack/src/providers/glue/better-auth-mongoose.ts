@@ -30,7 +30,7 @@ export const betterAuthMongooseGlue: Glue = {
   between: ["better-auth", "mongoose"],
   files: "glue/better-auth+mongoose",
   deps: {
-    "@better-auth/mongo-adapter": "^1.7.12",
+    "@better-auth/mongo-adapter": "^1.7.27",
   },
   fileManifest: ["app/server/auth.ts"],
   // `app/routes.ts` itself is a structured-merge target (ticket 013's

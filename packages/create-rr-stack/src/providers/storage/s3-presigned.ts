@@ -24,8 +24,8 @@ export const s3PresignedProvider = defineProvider({
   label: "S3 / Cloudflare R2 (presigned upload)",
   requires: [],
   deps: {
-    "@aws-sdk/client-s3": "^3.1173.0",
-    "@aws-sdk/s3-request-presigner": "^3.1173.0",
+    "@aws-sdk/client-s3": "^3.1175.0",
+    "@aws-sdk/s3-request-presigner": "^3.1175.0",
   },
   devDeps: {
     tsx: "^4.23.15",

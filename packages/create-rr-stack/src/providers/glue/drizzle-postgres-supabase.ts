@@ -12,7 +12,7 @@ export const drizzlePostgresSupabaseGlue: Glue = {
   between: ["drizzle", "postgres-supabase"],
   files: "glue/drizzle+postgres-supabase",
   deps: {
-    postgres: "^3.4.9",
+    postgres: "^4.1.1",
   },
   // Also ships the Postgres-flavored starter schema and drizzle-kit config
   // (ticket 006) — see drizzle-postgres-docker.ts for why these moved here

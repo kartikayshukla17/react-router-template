@@ -27,7 +27,7 @@ export const betterAuthProvider = defineProvider({
     { layer: "database", oneOf: ["postgres", "sqlite", "mongodb"] },
   ],
   deps: {
-    "better-auth": "^1.7.12",
+    "better-auth": "^1.7.27",
   },
   devDeps: {},
   env: [

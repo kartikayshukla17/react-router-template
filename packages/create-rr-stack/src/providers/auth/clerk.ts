@@ -17,8 +17,8 @@ export const clerkProvider = defineProvider({
   label: "Clerk",
   requires: [],
   deps: {
-    "@clerk/react-router": "^3.7.7",
-    "@clerk/backend": "^3.31.3",
+    "@clerk/react-router": "^3.7.8",
+    "@clerk/backend": "^3.31.4",
   },
   devDeps: {},
   env: [

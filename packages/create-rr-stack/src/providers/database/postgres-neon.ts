@@ -12,7 +12,7 @@ export const postgresNeonProvider = defineProvider({
   id: "postgres-neon",
   label: "PostgreSQL (Neon)",
   deps: {
-    "@neondatabase/serverless": "^1.2.0",
+    "@neondatabase/serverless": "^1.2.1",
   },
   devDeps: {},
   env: [

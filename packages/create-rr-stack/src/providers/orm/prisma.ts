@@ -47,8 +47,8 @@ export const prismaProvider = defineProvider({
   label: "Prisma",
   requires: [{ layer: "database", oneOf: ["postgres", "sqlite"] }],
   deps: {
-    "@prisma/client": "^6.19.3",
-    dotenv: "^18.0.9",
+    "@prisma/client": "^7.10.1",
+    dotenv: "^18.0.10",
   },
   devDeps: {
     prisma: "^6.19.3",

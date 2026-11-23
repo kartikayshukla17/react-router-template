@@ -31,7 +31,7 @@ export const mongooseProvider = defineProvider({
   label: "Mongoose",
   requires: [{ layer: "database", oneOf: ["mongodb"] }],
   deps: {
-    mongoose: "^9.11.3",
+    mongoose: "^9.12.3",
   },
   devDeps: {},
   env: [],

@@ -37,7 +37,7 @@ export const betterAuthPrismaGlue: Glue = {
   between: ["prisma", "better-auth"],
   files: "glue/better-auth+prisma",
   deps: {
-    "@better-auth/prisma-adapter": "^1.7.12",
+    "@better-auth/prisma-adapter": "^1.7.27",
   },
   fileManifest: ["app/server/auth.ts", "prisma/schema/auth-schema.prisma"],
   // `app/routes.ts` itself is a structured-merge target (ticket 013's

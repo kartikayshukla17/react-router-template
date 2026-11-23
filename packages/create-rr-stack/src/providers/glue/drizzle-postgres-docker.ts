@@ -13,7 +13,7 @@ export const drizzlePostgresDockerGlue: Glue = {
   between: ["drizzle", "postgres-docker"],
   files: "glue/drizzle+postgres-docker",
   deps: {
-    postgres: "^3.4.9",
+    postgres: "^4.1.1",
   },
   // Also ships the Postgres-flavored starter schema and drizzle-kit config
   // (ticket 006): these used to live on `orm/drizzle` itself, but SQLite

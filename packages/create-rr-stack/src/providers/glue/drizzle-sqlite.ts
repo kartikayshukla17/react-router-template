@@ -19,10 +19,10 @@ export const drizzleSqliteGlue: Glue = {
   between: ["drizzle", "sqlite"],
   files: "glue/drizzle+sqlite",
   deps: {
-    "better-sqlite3": "^11.9.1",
+    "better-sqlite3": "^13.2.0",
   },
   devDeps: {
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/better-sqlite3": "^9.6.0",
   },
   fileManifest: ["app/server/db.ts", "app/db/schema.ts", "drizzle.config.ts"],
 };

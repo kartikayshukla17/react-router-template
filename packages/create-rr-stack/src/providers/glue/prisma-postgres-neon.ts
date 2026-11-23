@@ -26,7 +26,7 @@ export const prismaPostgresNeonGlue: Glue = {
   between: ["prisma", "postgres-neon"],
   files: "glue/prisma+postgres-neon",
   deps: {
-    "@prisma/adapter-neon": "^6.19.3",
+    "@prisma/adapter-neon": "^7.10.1",
   },
   fileManifest: ["app/server/db.ts", "prisma.config.ts", "prisma/schema/schema.prisma"],
 };

@@ -27,7 +27,7 @@ export const supabaseClientProvider = defineProvider({
   id: "supabase-client",
   label: "Supabase client",
   deps: {
-    "@supabase/supabase-js": "^2.58.0",
+    "@supabase/supabase-js": "^2.119.2",
     // Pulled in unconditionally (not just when auth/supabase-auth is
     // selected): `createSupabaseServerClient` (ticket 010) lives in this
     // fragment's own `supabase-client.ts`, so every consumer of the shared
